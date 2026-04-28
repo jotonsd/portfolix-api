@@ -1,0 +1,60 @@
+[2026-04-28 16:51:46] ERROR converter views:51 — Conversion failed — id=4 error=Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CaWWrDCbZJ7ECXQ1sob6Y'}
+Traceback (most recent call last):
+  File "/Users/jotonsutradhar/Desktop/portfolix-api/converter/views.py", line 40, in post
+    html = generate_portfolio_html(cv_text)
+  File "/Users/jotonsutradhar/Desktop/portfolix-api/converter/services/claude_service.py", line 37, in generate_portfolio_html
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+    ...<7 lines>...
+        ],
+    )
+  File "/Users/jotonsutradhar/Desktop/portfolix-api/venv/lib/python3.13/site-packages/anthropic/_utils/_utils.py", line 268, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/jotonsutradhar/Desktop/portfolix-api/venv/lib/python3.13/site-packages/anthropic/resources/messages/messages.py", line 991, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/v1/messages",
+        ^^^^^^^^^^^^^^^
+    ...<30 lines>...
+        stream_cls=Stream[RawMessageStreamEvent],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/jotonsutradhar/Desktop/portfolix-api/venv/lib/python3.13/site-packages/anthropic/_base_client.py", line 1368, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jotonsutradhar/Desktop/portfolix-api/venv/lib/python3.13/site-packages/anthropic/_base_client.py", line 1141, in request
+    raise self._make_status_error_from_response(err.response) from None
+anthropic.AuthenticationError: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CaWWrDCbZJ7ECXQ1sob6Y'}
+[2026-04-28 16:51:46] ERROR django.request log:249 — Internal Server Error: /api/convert/
+[2026-04-28 16:51:46] ERROR django.server log:249 — "POST /api/convert/ HTTP/1.1" 500 168
+[2026-04-28 16:52:36] ERROR converter views:51 — Conversion failed — id=5 error=Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CaWWusfTWvkx6UyrYyyrR'}
+Traceback (most recent call last):
+  File "/Users/jotonsutradhar/Desktop/portfolix-api/converter/views.py", line 40, in post
+    html = generate_portfolio_html(cv_text)
+  File "/Users/jotonsutradhar/Desktop/portfolix-api/converter/services/claude_service.py", line 37, in generate_portfolio_html
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+    ...<7 lines>...
+        ],
+    )
+  File "/Users/jotonsutradhar/Desktop/portfolix-api/venv/lib/python3.13/site-packages/anthropic/_utils/_utils.py", line 268, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/jotonsutradhar/Desktop/portfolix-api/venv/lib/python3.13/site-packages/anthropic/resources/messages/messages.py", line 991, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/v1/messages",
+        ^^^^^^^^^^^^^^^
+    ...<30 lines>...
+        stream_cls=Stream[RawMessageStreamEvent],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/jotonsutradhar/Desktop/portfolix-api/venv/lib/python3.13/site-packages/anthropic/_base_client.py", line 1368, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jotonsutradhar/Desktop/portfolix-api/venv/lib/python3.13/site-packages/anthropic/_base_client.py", line 1141, in request
+    raise self._make_status_error_from_response(err.response) from None
+anthropic.AuthenticationError: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CaWWusfTWvkx6UyrYyyrR'}
+[2026-04-28 16:52:36] ERROR django.request log:249 — Internal Server Error: /api/convert/
+[2026-04-28 16:52:36] ERROR django.server log:249 — "POST /api/convert/ HTTP/1.1" 500 168

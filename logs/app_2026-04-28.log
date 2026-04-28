@@ -1,0 +1,128 @@
+[2026-04-28 16:54:07] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 16:54:26] INFO converter views:29 — CV upload received — id=6 file=cvs/Joton-Sutradhar-CV_8JgmVal.pdf
+[2026-04-28 16:54:26] DEBUG converter views:38 — Extracted 2777 characters from CV id=6
+[2026-04-28 16:54:26] DEBUG converter claude_service:35 — Sending CV text to Claude (2777 chars)
+[2026-04-28 16:55:47] DEBUG converter claude_service:50 — Claude returned 23903 chars of HTML (stop_reason=max_tokens)
+[2026-04-28 16:55:47] INFO converter views:45 — Portfolio generated successfully — id=6
+[2026-04-28 16:55:47] INFO django.server log:249 — "POST /api/convert/ HTTP/1.1" 201 24908
+[2026-04-28 16:56:39] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/converter/services/claude_service.py changed, reloading.
+[2026-04-28 16:56:40] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 16:57:11] ERROR django.server log:249 — "POST /api/convert/6 HTTP/1.1" 500 73674
+[2026-04-28 16:57:17] WARNING django.server log:249 — "POST /api/convert/6/ HTTP/1.1" 405 41
+[2026-04-28 16:57:22] INFO django.server log:249 — "GET /api/convert/6/ HTTP/1.1" 200 24908
+[2026-04-28 16:57:53] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/converter/serializers.py changed, reloading.
+[2026-04-28 16:57:54] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 16:57:59] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/converter/serializers.py changed, reloading.
+[2026-04-28 16:57:59] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 16:58:01] INFO django.server log:249 — "GET /api/convert/6/ HTTP/1.1" 200 24899
+[2026-04-28 16:58:10] INFO django.server log:249 — "GET /api/convert/6/ HTTP/1.1" 200 24899
+[2026-04-28 16:59:20] INFO converter views:29 — CV upload received — id=7 file=cvs/Joton-Sutradhar-CV_KzTNPns.pdf
+[2026-04-28 16:59:20] DEBUG converter views:38 — Extracted 2777 characters from CV id=7
+[2026-04-28 16:59:21] DEBUG converter claude_service:35 — Sending CV text to Claude (2777 chars)
+[2026-04-28 16:59:22] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/converter/services/claude_service.py changed, reloading.
+[2026-04-28 16:59:23] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 16:59:29] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/converter/views.py changed, reloading.
+[2026-04-28 16:59:29] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 16:59:41] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/converter/views.py changed, reloading.
+[2026-04-28 16:59:41] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 16:59:46] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/converter/urls.py changed, reloading.
+[2026-04-28 16:59:46] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 17:00:05] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 17:00:07] INFO converter views:30 — CV upload received — id=8 file=cvs/Joton-Sutradhar-CV_GBq7sjp.pdf
+[2026-04-28 17:00:07] DEBUG converter views:39 — Extracted 2777 characters from CV id=8
+[2026-04-28 17:00:07] DEBUG converter claude_service:35 — Sending CV text to Claude (2777 chars)
+[2026-04-28 17:00:47] WARNING django.server log:249 — "GET /api/convert/8/preview/ HTTP/1.1" 400 20
+[2026-04-28 17:00:54] INFO django.server log:249 — "GET /api/convert/8/ HTTP/1.1" 200 116
+[2026-04-28 17:02:47] DEBUG converter claude_service:50 — Claude returned 39000 chars of HTML (stop_reason=end_turn)
+[2026-04-28 17:02:48] INFO converter views:46 — Portfolio generated successfully — id=8
+[2026-04-28 17:02:48] INFO django.server log:249 — "POST /api/convert/ HTTP/1.1" 201 40534
+[2026-04-28 17:03:09] INFO django.server log:249 — "GET /api/convert/8/ HTTP/1.1" 200 40534
+[2026-04-28 17:03:12] INFO django.server log:249 — "GET /api/convert/8/preview/ HTTP/1.1" 200 39038
+[2026-04-28 17:05:22] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/converter/services/claude_service.py changed, reloading.
+[2026-04-28 17:05:22] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 17:05:49] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 17:05:51] INFO converter views:30 — CV upload received — id=9 file=cvs/Joton-Sutradhar-CV_Fy6Kbay.pdf
+[2026-04-28 17:05:51] DEBUG converter views:39 — Extracted 2777 characters from CV id=9
+[2026-04-28 17:05:51] DEBUG converter claude_service:45 — Sending CV text to Claude (2777 chars)
+[2026-04-28 17:07:34] DEBUG converter claude_service:60 — Claude returned 29139 chars of HTML (stop_reason=end_turn)
+[2026-04-28 17:07:34] INFO converter views:46 — Portfolio generated successfully — id=9
+[2026-04-28 17:07:34] INFO django.server log:249 — "POST /api/convert/ HTTP/1.1" 201 30473
+[2026-04-28 17:07:42] INFO django.server log:249 — "GET /api/convert/9/preview/ HTTP/1.1" 200 29236
+[2026-04-28 17:11:13] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/converter/services/claude_service.py changed, reloading.
+[2026-04-28 17:11:13] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 17:11:32] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/converter/views.py changed, reloading.
+[2026-04-28 17:11:33] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 17:14:24] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/converter/services/claude_service.py changed, reloading.
+[2026-04-28 17:14:25] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 17:15:08] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 17:16:15] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/config/settings.py changed, reloading.
+[2026-04-28 17:16:15] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 17:16:20] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/config/settings.py changed, reloading.
+[2026-04-28 17:16:20] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 17:16:32] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/config/__init__.py changed, reloading.
+[2026-04-28 17:16:32] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 17:16:54] INFO django.utils.autoreload autoreload:265 — /Users/jotonsutradhar/Desktop/portfolix-api/converter/views.py changed, reloading.
+[2026-04-28 17:16:55] INFO django.utils.autoreload autoreload:681 — Watching for file changes with StatReloader
+[2026-04-28 17:18:20] INFO converter views:31 — CV upload received — id=10 file=cvs/Joton-Sutradhar-CV_PfI3Wep.pdf
+[2026-04-28 17:18:20] DEBUG converter tasks:26 — Extracted 2777 chars from CV id=10
+[2026-04-28 17:18:20] DEBUG converter claude_service:78 — Sending CV text to Claude (2777 chars)
+[2026-04-28 17:20:38] DEBUG converter claude_service:93 — Claude returned 43346 chars of HTML (stop_reason=end_turn)
+[2026-04-28 17:20:38] INFO converter tasks:33 — Portfolio generated — id=10
+[2026-04-28 17:28:12] INFO converter views:33 — CV upload received — id=11 file=cvs/Joton-Sutradhar-CV_Xj00QKX.pdf
+[2026-04-28 17:28:12] DEBUG converter tasks:26 — Extracted 2777 chars from CV id=11 | profile_image=yes
+[2026-04-28 17:28:12] DEBUG converter claude_service:102 — Sending CV with profile image to Claude (2777 chars)
+[2026-04-28 17:32:55] DEBUG converter claude_service:119 — Claude returned 22115 chars of HTML (stop_reason=max_tokens)
+[2026-04-28 17:32:55] INFO converter tasks:36 — Portfolio generated — id=11
+[2026-04-28 17:35:19] INFO converter views:33 — CV upload received — id=12 file=cvs/Joton-Sutradhar-CV_2NxHrnE.pdf
+[2026-04-28 17:35:19] DEBUG converter tasks:26 — Extracted 2777 chars from CV id=12 | profile_image=yes
+[2026-04-28 17:35:19] DEBUG converter claude_service:102 — Sending CV with profile image to Claude (2777 chars)
+[2026-04-28 17:41:32] DEBUG converter claude_service:119 — Claude returned 24054 chars of HTML (stop_reason=max_tokens)
+[2026-04-28 17:41:32] INFO converter tasks:36 — Portfolio generated — id=12
+[2026-04-28 17:45:21] INFO converter views:33 — CV upload received — id=13 file=cvs/Joton-Sutradhar-CV_hh3zTMM.pdf
+[2026-04-28 17:45:21] DEBUG converter extractor:47 — PDF extracted: 2777 chars
+[2026-04-28 17:45:21] DEBUG converter tasks:24 — Extracted 2777 chars from 'Joton-Sutradhar-CV_hh3zTMM.pdf' id=13
+[2026-04-28 17:45:21] DEBUG converter claude_service:84 — Sending CV to Claude (2777 chars)
+[2026-04-28 17:46:18] INFO converter views:33 — CV upload received — id=14 file=cvs/ATS-resume-template-classic-resume.docx
+[2026-04-28 17:46:18] DEBUG converter extractor:94 — DOCX extracted: 2946 chars
+[2026-04-28 17:46:18] DEBUG converter tasks:24 — Extracted 2946 chars from 'ATS-resume-template-classic-resume.docx' id=14
+[2026-04-28 17:46:18] DEBUG converter claude_service:84 — Sending CV to Claude (2946 chars)
+[2026-04-28 17:47:21] DEBUG converter claude_service:94 — Claude returned 36364 chars of HTML (stop_reason=end_turn)
+[2026-04-28 17:47:21] INFO converter tasks:31 — Portfolio generated — id=13
+[2026-04-28 17:48:30] DEBUG converter claude_service:94 — Claude returned 37529 chars of HTML (stop_reason=end_turn)
+[2026-04-28 17:48:31] INFO converter tasks:31 — Portfolio generated — id=14
+[2026-04-28 17:55:36] INFO converter views:33 — CV upload received — id=15 file=cvs/Physician-CV-Example.png
+[2026-04-28 17:55:45] DEBUG converter extractor:85 — Image CV extracted via Claude Vision: 1176 chars
+[2026-04-28 17:55:45] DEBUG converter tasks:24 — Extracted 1176 chars from 'Physician-CV-Example.png' id=15
+[2026-04-28 17:55:45] DEBUG converter claude_service:153 — Sending CV to Claude (1176 chars)
+[2026-04-28 17:57:37] DEBUG converter claude_service:163 — Claude returned 37472 chars of HTML (stop_reason=end_turn)
+[2026-04-28 17:57:37] INFO converter tasks:31 — Portfolio generated — id=15
+[2026-04-28 17:59:11] INFO converter views:33 — CV upload received — id=16 file=cvs/Joton-Sutradhar-Resume.pdf
+[2026-04-28 17:59:11] DEBUG converter extractor:47 — PDF extracted: 2777 chars
+[2026-04-28 17:59:11] DEBUG converter tasks:24 — Extracted 2777 chars from 'Joton-Sutradhar-Resume.pdf' id=16
+[2026-04-28 17:59:11] DEBUG converter claude_service:153 — Sending CV to Claude (2777 chars)
+[2026-04-28 18:01:50] DEBUG converter claude_service:163 — Claude returned 45128 chars of HTML (stop_reason=end_turn)
+[2026-04-28 18:01:50] INFO converter tasks:31 — Portfolio generated — id=16
+[2026-04-28 18:06:18] INFO converter views:33 — CV upload received — id=17 file=cvs/Joton-Sutradhar-Resume_6Ymc4Nm.pdf
+[2026-04-28 18:06:18] DEBUG converter extractor:47 — PDF extracted: 2777 chars
+[2026-04-28 18:06:18] DEBUG converter tasks:24 — Extracted 2777 chars from 'Joton-Sutradhar-Resume_6Ymc4Nm.pdf' id=17
+[2026-04-28 18:06:18] DEBUG converter claude_service:153 — Sending CV to Claude (2777 chars)
+[2026-04-28 18:08:14] DEBUG converter claude_service:163 — Claude returned 41877 chars of HTML (stop_reason=end_turn)
+[2026-04-28 18:08:14] INFO converter tasks:31 — Portfolio generated — id=17
+[2026-04-28 18:19:21] INFO converter views:33 — CV upload received — id=18 file=cvs/Joton-Sutradhar-Resume_7HFWSLJ.pdf
+[2026-04-28 18:19:21] DEBUG converter extractor:47 — PDF extracted: 2777 chars
+[2026-04-28 18:19:21] DEBUG converter tasks:24 — Extracted 2777 chars from 'Joton-Sutradhar-Resume_7HFWSLJ.pdf' id=18
+[2026-04-28 18:19:21] DEBUG converter claude_service:97 — Sending CV to Claude (2777 chars)
+[2026-04-28 18:22:00] DEBUG converter claude_service:107 — Claude returned 43052 chars of HTML (stop_reason=max_tokens)
+[2026-04-28 18:22:00] INFO converter tasks:31 — Portfolio generated — id=18
+[2026-04-28 18:27:33] INFO converter views:33 — CV upload received — id=19 file=cvs/Joton-Sutradhar-Resume_ABIeJVa.pdf
+[2026-04-28 18:27:33] DEBUG converter extractor:47 — PDF extracted: 2777 chars
+[2026-04-28 18:27:33] DEBUG converter tasks:24 — Extracted 2777 chars from 'Joton-Sutradhar-Resume_ABIeJVa.pdf' id=19
+[2026-04-28 18:27:33] DEBUG converter claude_service:97 — Sending CV to Claude (2777 chars)
+[2026-04-28 18:28:05] INFO converter views:33 — CV upload received — id=20 file=cvs/Joton-Sutradhar-Resume_MYjDqpz.pdf
+[2026-04-28 18:28:06] DEBUG converter extractor:47 — PDF extracted: 2777 chars
+[2026-04-28 18:28:06] DEBUG converter tasks:24 — Extracted 2777 chars from 'Joton-Sutradhar-Resume_MYjDqpz.pdf' id=20
+[2026-04-28 18:28:06] DEBUG converter claude_service:97 — Sending CV to Claude (2777 chars)
+[2026-04-28 18:30:00] DEBUG converter claude_service:107 — Claude returned 42189 chars of HTML (stop_reason=end_turn)
+[2026-04-28 18:30:00] INFO converter tasks:31 — Portfolio generated — id=19
+[2026-04-28 18:30:17] DEBUG converter claude_service:107 — Claude returned 43594 chars of HTML (stop_reason=max_tokens)
+[2026-04-28 18:30:17] INFO converter tasks:31 — Portfolio generated — id=20

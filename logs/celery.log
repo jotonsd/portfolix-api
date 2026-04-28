@@ -1,0 +1,73 @@
+[2026-04-28 17:18:06,460: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2026-04-28 17:18:06,463: INFO/MainProcess] mingle: searching for neighbors
+[2026-04-28 17:18:07,479: INFO/MainProcess] mingle: all alone
+[2026-04-28 17:18:07,510: INFO/MainProcess] celery@Jotons-MacBook-Air-2.local ready.
+[2026-04-28 17:18:20,165: INFO/MainProcess] Task converter.tasks.process_cv_task[4269057d-1259-4cde-b662-47b92514c53c] received
+[2026-04-28 17:20:38,872: INFO/ForkPoolWorker-1] HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+[2026-04-28 17:20:38,929: INFO/ForkPoolWorker-1] Task converter.tasks.process_cv_task[4269057d-1259-4cde-b662-47b92514c53c] succeeded in 138.75951108400022s: None
+[2026-04-28 17:22:02,335: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2026-04-28 17:22:02,337: INFO/MainProcess] mingle: searching for neighbors
+[2026-04-28 17:22:03,344: INFO/MainProcess] mingle: all alone
+[2026-04-28 17:22:03,355: INFO/MainProcess] celery@Jotons-MacBook-Air-2.local ready.
+[2026-04-28 17:22:07,694: INFO/MainProcess] Events of group {task} enabled by remote.
+[2026-04-28 17:26:27,616: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2026-04-28 17:26:27,618: INFO/MainProcess] mingle: searching for neighbors
+[2026-04-28 17:26:28,641: INFO/MainProcess] mingle: all alone
+[2026-04-28 17:26:28,672: INFO/MainProcess] celery@Jotons-MacBook-Air-2.local ready.
+[2026-04-28 17:26:33,229: INFO/MainProcess] Events of group {task} enabled by remote.
+[2026-04-28 17:27:06,388: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2026-04-28 17:27:06,390: INFO/MainProcess] mingle: searching for neighbors
+[2026-04-28 17:27:07,397: INFO/MainProcess] mingle: all alone
+[2026-04-28 17:27:07,411: INFO/MainProcess] celery@Jotons-MacBook-Air-2.local ready.
+[2026-04-28 17:27:12,331: INFO/MainProcess] Events of group {task} enabled by remote.
+[2026-04-28 17:27:57,504: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2026-04-28 17:27:57,506: INFO/MainProcess] mingle: searching for neighbors
+[2026-04-28 17:27:58,512: INFO/MainProcess] mingle: all alone
+[2026-04-28 17:27:58,523: INFO/MainProcess] celery@Jotons-MacBook-Air-2.local ready.
+[2026-04-28 17:28:05,436: INFO/MainProcess] Events of group {task} enabled by remote.
+[2026-04-28 17:28:12,308: INFO/MainProcess] Task converter.tasks.process_cv_task[009391a4-e756-4a01-a916-fd6d641cf35d] received
+[2026-04-28 17:32:55,217: INFO/ForkPoolWorker-1] HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+[2026-04-28 17:32:55,354: INFO/ForkPoolWorker-1] Task converter.tasks.process_cv_task[009391a4-e756-4a01-a916-fd6d641cf35d] succeeded in 283.03787895799996s: None
+[2026-04-28 17:35:19,386: INFO/MainProcess] Task converter.tasks.process_cv_task[a649b121-482b-43a9-986d-5c646c6a72fc] received
+[2026-04-28 17:41:32,202: INFO/ForkPoolWorker-1] HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+[2026-04-28 17:41:32,252: INFO/ForkPoolWorker-1] Task converter.tasks.process_cv_task[a649b121-482b-43a9-986d-5c646c6a72fc] succeeded in 372.8632457499998s: None
+[2026-04-28 17:45:13,050: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2026-04-28 17:45:13,052: INFO/MainProcess] mingle: searching for neighbors
+[2026-04-28 17:45:14,060: INFO/MainProcess] mingle: all alone
+[2026-04-28 17:45:14,081: INFO/MainProcess] celery@Jotons-MacBook-Air-2.local ready.
+[2026-04-28 17:45:21,047: INFO/MainProcess] Events of group {task} enabled by remote.
+[2026-04-28 17:45:21,337: INFO/MainProcess] Task converter.tasks.process_cv_task[1ff347a8-3361-4efa-ae10-bef23712e351] received
+[2026-04-28 17:46:18,585: INFO/MainProcess] Task converter.tasks.process_cv_task[208286ca-15ee-40f2-a957-346b617ca1e7] received
+[2026-04-28 17:47:21,075: INFO/ForkPoolWorker-1] HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+[2026-04-28 17:47:21,151: INFO/ForkPoolWorker-1] Task converter.tasks.process_cv_task[1ff347a8-3361-4efa-ae10-bef23712e351] succeeded in 119.81109412499973s: None
+[2026-04-28 17:48:30,958: INFO/ForkPoolWorker-2] HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+[2026-04-28 17:48:31,025: INFO/ForkPoolWorker-2] Task converter.tasks.process_cv_task[208286ca-15ee-40f2-a957-346b617ca1e7] succeeded in 132.4327513340004s: None
+[2026-04-28 17:54:40,896: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2026-04-28 17:54:40,899: INFO/MainProcess] mingle: searching for neighbors
+[2026-04-28 17:54:41,908: INFO/MainProcess] mingle: all alone
+[2026-04-28 17:54:41,931: INFO/MainProcess] celery@Jotons-MacBook-Air-2.local ready.
+[2026-04-28 17:54:48,708: INFO/MainProcess] Events of group {task} enabled by remote.
+[2026-04-28 17:55:36,443: INFO/MainProcess] Task converter.tasks.process_cv_task[e9f85e95-a291-4141-aebb-a6ea12e8b35b] received
+[2026-04-28 17:55:45,483: INFO/ForkPoolWorker-1] HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+[2026-04-28 17:57:37,778: INFO/ForkPoolWorker-1] HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+[2026-04-28 17:57:37,857: INFO/ForkPoolWorker-1] Task converter.tasks.process_cv_task[e9f85e95-a291-4141-aebb-a6ea12e8b35b] succeeded in 121.39916758299933s: None
+[2026-04-28 17:59:11,268: INFO/MainProcess] Task converter.tasks.process_cv_task[5e9f9bc4-e0b1-4837-b95f-cbb324669a43] received
+[2026-04-28 18:01:50,255: INFO/ForkPoolWorker-1] HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+[2026-04-28 18:01:50,329: INFO/ForkPoolWorker-1] Task converter.tasks.process_cv_task[5e9f9bc4-e0b1-4837-b95f-cbb324669a43] succeeded in 159.05064687499998s: None
+[2026-04-28 18:06:18,772: INFO/MainProcess] Task converter.tasks.process_cv_task[2d336f2c-c133-488e-803d-6585f3fa9a8d] received
+[2026-04-28 18:08:14,332: INFO/ForkPoolWorker-1] HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+[2026-04-28 18:08:14,456: INFO/ForkPoolWorker-1] Task converter.tasks.process_cv_task[2d336f2c-c133-488e-803d-6585f3fa9a8d] succeeded in 115.64891799999987s: None
+[2026-04-28 18:19:01,834: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2026-04-28 18:19:01,837: INFO/MainProcess] mingle: searching for neighbors
+[2026-04-28 18:19:02,844: INFO/MainProcess] mingle: all alone
+[2026-04-28 18:19:02,871: INFO/MainProcess] celery@Jotons-MacBook-Air-2.local ready.
+[2026-04-28 18:19:09,646: INFO/MainProcess] Events of group {task} enabled by remote.
+[2026-04-28 18:19:21,675: INFO/MainProcess] Task converter.tasks.process_cv_task[89123602-16ba-463c-ad0b-bd001d6c16b5] received
+[2026-04-28 18:22:00,728: INFO/ForkPoolWorker-1] HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+[2026-04-28 18:22:00,801: INFO/ForkPoolWorker-1] Task converter.tasks.process_cv_task[89123602-16ba-463c-ad0b-bd001d6c16b5] succeeded in 159.119856583s: None
+[2026-04-28 18:27:33,470: INFO/MainProcess] Task converter.tasks.process_cv_task[39a6838e-9fee-4bd3-8a9e-3f2e8bb773e3] received
+[2026-04-28 18:28:05,876: INFO/MainProcess] Task converter.tasks.process_cv_task[9bc1de98-0e73-455d-a499-18eed7970c84] received
+[2026-04-28 18:30:00,517: INFO/ForkPoolWorker-1] HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+[2026-04-28 18:30:00,756: INFO/ForkPoolWorker-1] Task converter.tasks.process_cv_task[39a6838e-9fee-4bd3-8a9e-3f2e8bb773e3] succeeded in 147.2732142499999s: None
+[2026-04-28 18:30:17,074: INFO/ForkPoolWorker-2] HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+[2026-04-28 18:30:17,281: INFO/ForkPoolWorker-2] Task converter.tasks.process_cv_task[9bc1de98-0e73-455d-a499-18eed7970c84] succeeded in 131.39332629199998s: None

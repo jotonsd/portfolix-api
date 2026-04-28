@@ -1,0 +1,97 @@
+[2026-04-28 23:18:06 +0600] [97962] [INFO] Starting gunicorn 25.3.0
+[2026-04-28 23:18:06 +0600] [97962] [INFO] Listening at: http://0.0.0.0:8000 (97962)
+[2026-04-28 23:18:06 +0600] [97962] [INFO] Using worker: sync
+[2026-04-28 23:18:06 +0600] [97969] [INFO] Booting worker with pid: 97969
+[2026-04-28 23:18:06 +0600] [97970] [INFO] Booting worker with pid: 97970
+[2026-04-28 23:18:06 +0600] [97971] [INFO] Booting worker with pid: 97971
+[2026-04-28 23:18:06 +0600] [97962] [INFO] Control socket listening at /Users/jotonsutradhar/.gunicorn/gunicorn.ctl
+[2026-04-28 23:21:56 +0600] [97962] [INFO] Handling signal: int
+[2026-04-28 17:21:56 +0000] [97971] [INFO] Worker exiting (pid: 97971)
+[2026-04-28 17:21:56 +0000] [97969] [INFO] Worker exiting (pid: 97969)
+[2026-04-28 17:21:56 +0000] [97970] [INFO] Worker exiting (pid: 97970)
+[2026-04-28 23:21:57 +0600] [97962] [INFO] Shutting down: Master
+[2026-04-28 23:22:03 +0600] [4097] [INFO] Starting gunicorn 25.3.0
+[2026-04-28 23:22:03 +0600] [4097] [INFO] Listening at: http://0.0.0.0:8000 (4097)
+[2026-04-28 23:22:03 +0600] [4097] [INFO] Using worker: sync
+[2026-04-28 23:22:03 +0600] [4099] [INFO] Booting worker with pid: 4099
+[2026-04-28 23:22:03 +0600] [4100] [INFO] Booting worker with pid: 4100
+[2026-04-28 23:22:03 +0600] [4101] [INFO] Booting worker with pid: 4101
+[2026-04-28 23:22:03 +0600] [4097] [INFO] Control socket listening at /Users/jotonsutradhar/.gunicorn/gunicorn.ctl
+[2026-04-28 23:26:23 +0600] [4097] [INFO] Handling signal: int
+[2026-04-28 17:26:23 +0000] [4099] [INFO] Worker exiting (pid: 4099)
+[2026-04-28 17:26:23 +0000] [4100] [INFO] Worker exiting (pid: 4100)
+[2026-04-28 17:26:23 +0000] [4101] [INFO] Worker exiting (pid: 4101)
+[2026-04-28 23:26:23 +0600] [4097] [INFO] Shutting down: Master
+[2026-04-28 23:26:28 +0600] [10307] [INFO] Starting gunicorn 25.3.0
+[2026-04-28 23:26:28 +0600] [10307] [INFO] Listening at: http://0.0.0.0:8000 (10307)
+[2026-04-28 23:26:28 +0600] [10307] [INFO] Using worker: sync
+[2026-04-28 23:26:28 +0600] [10309] [INFO] Booting worker with pid: 10309
+[2026-04-28 23:26:28 +0600] [10310] [INFO] Booting worker with pid: 10310
+[2026-04-28 23:26:28 +0600] [10311] [INFO] Booting worker with pid: 10311
+[2026-04-28 23:26:28 +0600] [10307] [INFO] Control socket listening at /Users/jotonsutradhar/.gunicorn/gunicorn.ctl
+[2026-04-28 23:27:02 +0600] [10307] [INFO] Handling signal: int
+[2026-04-28 17:27:02 +0000] [10309] [INFO] Worker exiting (pid: 10309)
+[2026-04-28 17:27:02 +0000] [10310] [INFO] Worker exiting (pid: 10310)
+[2026-04-28 17:27:02 +0000] [10311] [INFO] Worker exiting (pid: 10311)
+[2026-04-28 23:27:02 +0600] [10307] [INFO] Shutting down: Master
+[2026-04-28 23:27:07 +0600] [11424] [INFO] Starting gunicorn 25.3.0
+[2026-04-28 23:27:07 +0600] [11424] [INFO] Listening at: http://0.0.0.0:8000 (11424)
+[2026-04-28 23:27:07 +0600] [11424] [INFO] Using worker: sync
+[2026-04-28 23:27:07 +0600] [11426] [INFO] Booting worker with pid: 11426
+[2026-04-28 23:27:07 +0600] [11427] [INFO] Booting worker with pid: 11427
+[2026-04-28 23:27:07 +0600] [11428] [INFO] Booting worker with pid: 11428
+[2026-04-28 23:27:07 +0600] [11424] [INFO] Control socket listening at /Users/jotonsutradhar/.gunicorn/gunicorn.ctl
+[2026-04-28 23:27:50 +0600] [11424] [INFO] Handling signal: int
+[2026-04-28 17:27:50 +0000] [11428] [INFO] Worker exiting (pid: 11428)
+[2026-04-28 17:27:50 +0000] [11426] [INFO] Worker exiting (pid: 11426)
+[2026-04-28 17:27:50 +0000] [11427] [INFO] Worker exiting (pid: 11427)
+[2026-04-28 23:27:51 +0600] [11424] [INFO] Shutting down: Master
+[2026-04-28 23:28:00 +0600] [12704] [INFO] Starting gunicorn 25.3.0
+[2026-04-28 23:28:00 +0600] [12704] [INFO] Listening at: http://0.0.0.0:8000 (12704)
+[2026-04-28 23:28:00 +0600] [12704] [INFO] Using worker: sync
+[2026-04-28 23:28:00 +0600] [12706] [INFO] Booting worker with pid: 12706
+[2026-04-28 23:28:00 +0600] [12707] [INFO] Booting worker with pid: 12707
+[2026-04-28 23:28:01 +0600] [12708] [INFO] Booting worker with pid: 12708
+[2026-04-28 23:28:01 +0600] [12704] [INFO] Control socket listening at /Users/jotonsutradhar/.gunicorn/gunicorn.ctl
+[2026-04-28 23:45:08 +0600] [12704] [INFO] Handling signal: int
+[2026-04-28 17:45:08 +0000] [12707] [INFO] Worker exiting (pid: 12707)
+[2026-04-28 17:45:08 +0000] [12706] [INFO] Worker exiting (pid: 12706)
+[2026-04-28 17:45:08 +0000] [12708] [INFO] Worker exiting (pid: 12708)
+[2026-04-28 23:45:08 +0600] [12704] [INFO] Shutting down: Master
+[2026-04-28 23:45:16 +0600] [36787] [INFO] Starting gunicorn 25.3.0
+[2026-04-28 23:45:16 +0600] [36787] [INFO] Listening at: http://0.0.0.0:8000 (36787)
+[2026-04-28 23:45:16 +0600] [36787] [INFO] Using worker: sync
+[2026-04-28 23:45:16 +0600] [36790] [INFO] Booting worker with pid: 36790
+[2026-04-28 23:45:16 +0600] [36791] [INFO] Booting worker with pid: 36791
+[2026-04-28 23:45:16 +0600] [36792] [INFO] Booting worker with pid: 36792
+[2026-04-28 23:45:16 +0600] [36787] [INFO] Control socket listening at /Users/jotonsutradhar/.gunicorn/gunicorn.ctl
+[2026-04-28 23:54:35 +0600] [36787] [INFO] Handling signal: int
+[2026-04-28 17:54:35 +0000] [36790] [INFO] Worker exiting (pid: 36790)
+[2026-04-28 17:54:35 +0000] [36792] [INFO] Worker exiting (pid: 36792)
+[2026-04-28 17:54:35 +0000] [36791] [INFO] Worker exiting (pid: 36791)
+[2026-04-28 23:54:36 +0600] [36787] [INFO] Shutting down: Master
+[2026-04-28 23:54:44 +0600] [49894] [INFO] Starting gunicorn 25.3.0
+[2026-04-28 23:54:44 +0600] [49894] [INFO] Listening at: http://0.0.0.0:8000 (49894)
+[2026-04-28 23:54:44 +0600] [49894] [INFO] Using worker: sync
+[2026-04-28 23:54:44 +0600] [49896] [INFO] Booting worker with pid: 49896
+[2026-04-28 23:54:44 +0600] [49897] [INFO] Booting worker with pid: 49897
+[2026-04-28 23:54:44 +0600] [49898] [INFO] Booting worker with pid: 49898
+[2026-04-28 23:54:44 +0600] [49894] [INFO] Control socket listening at /Users/jotonsutradhar/.gunicorn/gunicorn.ctl
+[2026-04-29 00:18:56 +0600] [49894] [INFO] Handling signal: int
+[2026-04-28 18:18:56 +0000] [49898] [INFO] Worker exiting (pid: 49898)
+[2026-04-28 18:18:56 +0000] [49897] [INFO] Worker exiting (pid: 49897)
+[2026-04-28 18:18:56 +0000] [49896] [INFO] Worker exiting (pid: 49896)
+[2026-04-29 00:18:56 +0600] [49894] [INFO] Shutting down: Master
+[2026-04-29 00:19:05 +0600] [83465] [INFO] Starting gunicorn 25.3.0
+[2026-04-29 00:19:05 +0600] [83465] [INFO] Listening at: http://0.0.0.0:8000 (83465)
+[2026-04-29 00:19:05 +0600] [83465] [INFO] Using worker: sync
+[2026-04-29 00:19:05 +0600] [83467] [INFO] Booting worker with pid: 83467
+[2026-04-29 00:19:05 +0600] [83468] [INFO] Booting worker with pid: 83468
+[2026-04-29 00:19:05 +0600] [83469] [INFO] Booting worker with pid: 83469
+[2026-04-29 00:19:05 +0600] [83465] [INFO] Control socket listening at /Users/jotonsutradhar/.gunicorn/gunicorn.ctl
+[2026-04-29 00:36:46 +0600] [83465] [INFO] Handling signal: winch
+[2026-04-29 00:37:57 +0600] [83465] [INFO] Handling signal: int
+[2026-04-28 18:37:57 +0000] [83467] [INFO] Worker exiting (pid: 83467)
+[2026-04-28 18:37:57 +0000] [83468] [INFO] Worker exiting (pid: 83468)
+[2026-04-28 18:37:57 +0000] [83469] [INFO] Worker exiting (pid: 83469)
+[2026-04-29 00:37:57 +0600] [83465] [INFO] Shutting down: Master
