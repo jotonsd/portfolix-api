@@ -46,7 +46,10 @@ def extract_text(file_bytes: bytes, filename: str) -> str:
 
 
 def _extract_from_pdf(file_bytes: bytes) -> str:
-    doc = fitz.open(stream=file_bytes, filetype="pdf")
+    try:
+        doc = fitz.open(stream=file_bytes, filetype="pdf")
+    except Exception as e:
+        raise ValueError(f"Could not open PDF: {e}") from e
     text = "\n".join(page.get_text() for page in doc).strip()
     doc.close()
     logger.debug("PDF extracted: %d chars", len(text))
@@ -73,6 +76,8 @@ def _extract_image_gemini(file_bytes: bytes, ext: str) -> str:
             types.Part.from_text(text=EXTRACT_PROMPT),
         ],
     )
+    if not response.text:
+        raise ValueError("Gemini returned empty response for image extraction.")
     text = response.text.strip()
     logger.debug("Image CV extracted via Gemini Vision: %d chars", len(text))
     return text
@@ -96,7 +101,10 @@ def _extract_image_claude(file_bytes: bytes, ext: str) -> str:
             ],
         }],
     )
-    text = message.content[0].text.strip()
+    block = message.content[0]
+    if block.type != 'text':
+        raise ValueError(f"Unexpected Claude response block type: {block.type}")
+    text = block.text.strip()
     logger.debug("Image CV extracted via Claude Vision: %d chars", len(text))
     return text
 

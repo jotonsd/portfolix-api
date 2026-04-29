@@ -14,7 +14,11 @@ def process_cv_task(self, instance_id: int, cv_bytes_hex: str, filename: str):
 
     try:
         instance = CVUpload.objects.get(pk=instance_id)
-        cv_bytes = bytes.fromhex(cv_bytes_hex)
+        try:
+            cv_bytes = bytes.fromhex(cv_bytes_hex)
+        except ValueError as exc:
+            logger.error("Invalid hex payload for id=%s: %s", instance_id, exc)
+            raise
 
         cv_text = extract_text(cv_bytes, filename)
 
@@ -47,5 +51,5 @@ def process_cv_task(self, instance_id: int, cv_bytes_hex: str, filename: str):
             instance.error_message = str(exc)
             instance.save()
         except Exception:
-            pass
+            logger.error("Failed to update CVUpload status for id=%s", instance_id, exc_info=True)
         raise self.retry(exc=exc)

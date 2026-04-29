@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from .models import User, Plan, UserSubscription
 
@@ -58,20 +59,20 @@ class ProfileSerializer(serializers.ModelSerializer):
     def get_plan(self, obj):
         try:
             return obj.subscription.plan.name
-        except Exception:
+        except ObjectDoesNotExist:
             return 'free'
 
     def get_cv_count(self, obj):
         try:
             return obj.subscription.cv_count
-        except Exception:
+        except ObjectDoesNotExist:
             return 0
 
     def get_cv_limit(self, obj):
         try:
             limit = obj.subscription.plan.cv_limit
             return limit if limit != -1 else 'unlimited'
-        except Exception:
+        except ObjectDoesNotExist:
             return 1
 
 

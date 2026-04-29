@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+from django.db.models import F
 from django.utils import timezone
 
 
@@ -92,5 +93,6 @@ class UserSubscription(models.Model):
         return True, None
 
     def increment(self):
-        self.cv_count += 1
-        self.save(update_fields=['cv_count'])
+        # Atomic DB-level increment — prevents race condition under concurrent requests
+        UserSubscription.objects.filter(pk=self.pk).update(cv_count=F('cv_count') + 1)
+        self.refresh_from_db(fields=['cv_count'])

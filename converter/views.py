@@ -42,8 +42,8 @@ class ConvertCVView(APIView):
 
         subscription.increment()
 
-        instance.cv_file.seek(0)
-        cv_bytes_hex = instance.cv_file.read().hex()
+        with instance.cv_file.open('rb') as f:
+            cv_bytes_hex = f.read().hex()
         filename = instance.cv_file.name.split('/')[-1]
 
         process_cv_task.delay(instance.pk, cv_bytes_hex, filename)
@@ -85,11 +85,19 @@ class CVPreviewView(APIView):
         return HttpResponse(html, content_type="text/html; charset=utf-8")
 
 
+def _celery_inspect(method: str) -> dict:
+    try:
+        return getattr(celery_app.control.inspect(timeout=2), method)() or {}
+    except Exception:
+        logger.warning("Celery broker unreachable, skipping inspect.%s", method)
+        return {}
+
+
 class JobStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        active_raw = celery_app.control.inspect(timeout=2).active() or {}
+        active_raw = _celery_inspect('active')
         active = []
         for worker, tasks in active_raw.items():
             for t in tasks:
@@ -102,7 +110,7 @@ class JobStatusView(APIView):
                     "state": "active",
                 })
 
-        reserved_raw = celery_app.control.inspect(timeout=2).reserved() or {}
+        reserved_raw = _celery_inspect('reserved')
         reserved = []
         for worker, tasks in reserved_raw.items():
             for t in tasks:

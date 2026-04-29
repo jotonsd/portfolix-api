@@ -6,6 +6,7 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Plan, UserSubscription, User
@@ -29,7 +30,29 @@ def _assign_free_plan(user):
     UserSubscription.objects.get_or_create(user=user, defaults={'plan': plan})
 
 
+def _handle_social_login(info: dict, id_field: str):
+    with transaction.atomic():
+        user, created = User.objects.get_or_create(
+            email=info['email'],
+            defaults={
+                'first_name': info['first_name'],
+                'last_name': info['last_name'],
+                id_field: info[id_field],
+                'is_active': True,
+            },
+        )
+        if not created and info[id_field] and not getattr(user, id_field):
+            setattr(user, id_field, info[id_field])
+            user.save(update_fields=[id_field])
+        if created:
+            user.set_unusable_password()
+            user.save()
+            _assign_free_plan(user)
+    return user, created
+
+
 class RegisterView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, JSONParser]
 
@@ -50,6 +73,7 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
     parser_classes = [JSONParser, MultiPartParser]
 
@@ -67,6 +91,7 @@ class LoginView(APIView):
 
 
 class GoogleLoginView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
     parser_classes = [JSONParser, MultiPartParser]
 
@@ -74,35 +99,13 @@ class GoogleLoginView(APIView):
         serializer = SocialAuthSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
         try:
             info = verify_google_token(serializer.validated_data['access_token'])
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-        with transaction.atomic():
-            user, created = User.objects.get_or_create(
-                email=info['email'],
-                defaults={
-                    'first_name': info['first_name'],
-                    'last_name': info['last_name'],
-                    'google_id': info['google_id'],
-                    'is_active': True,
-                },
-            )
-            if not created and info['google_id'] and not user.google_id:
-                user.google_id = info['google_id']
-                user.save(update_fields=['google_id'])
-            if created:
-                user.set_unusable_password()
-                user.save()
-                _assign_free_plan(user)
-
+        user, created = _handle_social_login(info, 'google_id')
         logger.info("Google login: %s (new=%s)", user.email, created)
-        return Response({
-            'user': ProfileSerializer(user).data,
-            'tokens': _tokens(user),
-        })
+        return Response({'user': ProfileSerializer(user).data, 'tokens': _tokens(user)})
 
 
 class FacebookLoginView(APIView):
@@ -113,35 +116,13 @@ class FacebookLoginView(APIView):
         serializer = SocialAuthSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
         try:
             info = verify_facebook_token(serializer.validated_data['access_token'])
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-        with transaction.atomic():
-            user, created = User.objects.get_or_create(
-                email=info['email'],
-                defaults={
-                    'first_name': info['first_name'],
-                    'last_name': info['last_name'],
-                    'facebook_id': info['facebook_id'],
-                    'is_active': True,
-                },
-            )
-            if not created and info['facebook_id'] and not user.facebook_id:
-                user.facebook_id = info['facebook_id']
-                user.save(update_fields=['facebook_id'])
-            if created:
-                user.set_unusable_password()
-                user.save()
-                _assign_free_plan(user)
-
+        user, created = _handle_social_login(info, 'facebook_id')
         logger.info("Facebook login: %s (new=%s)", user.email, created)
-        return Response({
-            'user': ProfileSerializer(user).data,
-            'tokens': _tokens(user),
-        })
+        return Response({'user': ProfileSerializer(user).data, 'tokens': _tokens(user)})
 
 
 class ProfileView(APIView):
@@ -160,6 +141,7 @@ class ProfileView(APIView):
 
 
 class PlanListView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -168,6 +150,7 @@ class PlanListView(APIView):
 
 
 class TokenRefreshView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
     parser_classes = [JSONParser, MultiPartParser]
 
@@ -178,5 +161,5 @@ class TokenRefreshView(APIView):
         try:
             refresh = RefreshToken(token)
             return Response({'access': str(refresh.access_token)})
-        except Exception:
+        except TokenError:
             return Response({'error': 'Invalid or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)

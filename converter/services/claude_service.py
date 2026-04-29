@@ -5,51 +5,65 @@ from django.conf import settings
 
 logger = logging.getLogger('converter')
 
-SYSTEM_PROMPT = """Senior frontend engineer. Build a unique animated portfolio HTML from the CV.
+SYSTEM_PROMPT = """You are an elite creative developer. Read the CV carefully and build a stunning, fully interactive portfolio website in a single HTML file.
 
-OUTPUT: Raw <!DOCTYPE html>…</html> only. Nothing else outside the HTML.
+Every design decision — color palette, typography, layout, animations, interactions — must be inspired by who this person is: their profession, industry, personality, and story. A chef, a data scientist, and a lawyer must look completely different.
 
-DESIGN: Invent the entire design from who this person is — their profession, industry, skills, and personality. Colors, fonts, canvas animation, layout — all must feel inevitable for this exact individual. No two portfolios should look alike. Never produce a generic template, plain dark mode, or centered-text boilerplate.
+Do NOT default to dark backgrounds. Choose colors that feel alive for this person — vibrant, warm, or bold. Light, gradient, or colorful backgrounds are encouraged.
 
-HTML rules: Tailwind CDN + Google Fonts in <head>. No <img>. No inline style=. No HTML comments. CV content only — never invent facts. Mobile-responsive. Sections stack on mobile.
+STYLING: Use ONLY Tailwind CSS classes for all styling. Include the Tailwind CDN and a Google Font in <head>. Do NOT write any <style> tags or inline style= attributes anywhere in the HTML. Every visual style must come from Tailwind utility classes only.
 
-JS rules (one <script> at end of body — var only, no const/let/arrow functions/template literals):
-• id="navbar" — add blur+shadow after 60px scroll
-• id="menu-btn" toggles id="mobile-menu" — nav links close menu on click
-• class="reveal" on every section and card — IntersectionObserver fades in opacity+translateY
-• Canvas hero animation — full working code, invented specifically for this person's world
+HERO ANIMATION (required): The hero section must have a full-screen canvas animation deeply connected to who this person is. Rich, atmospheric, particle-based — dozens of shapes twinkling, raining, drifting, or floating. Think of a night sky full of sparkling stars — that same density and liveliness, but the shapes and behavior invented from the person's world:
+- A developer → raining code characters
+- A chef → rising steam or floating spice dots
+- A designer → drifting glowing color orbs
+- A marketer → rising signal ripple rings
+Invent something original. Particle count 80–150. Each particle has its own speed, size, opacity, lifecycle. Written in plain JS (var only, no const/let/arrow functions/template literals) in one <script> at end of body.
 
-Hover effects on all cards, tags, and links. Complete the HTML in one response — close all tags, end with </html>."""
+Rules:
+- Return raw HTML only. The very last characters you output MUST be </body></html>. You have 15000 tokens — use them, never stop early, never truncate.
+- No invented facts. CV content only.
+- Mobile responsive.
+- Fully mobile responsive. Use Tailwind responsive prefixes (sm:, md:, lg:) throughout. On mobile: single column layout, stacked nav, readable font sizes, touch-friendly tap targets. Test every section mentally on a 375px screen.
+- Navbar must match the overall design — same color palette, fonts, and personality as the rest of the site. It should feel like it belongs. Include a hamburger menu for mobile that toggles a full mobile nav. Navbar becomes solid/blurred on scroll.
+- No <img> tags. No <style> tags. No inline style= attributes."""
 
 USER_PROMPT_TEMPLATE = """CV:
 {cv_text}
 
-Build a one-of-a-kind portfolio for this person. Invent the design from their CV. Return only the HTML."""
+Study this person. Build a world-class portfolio — Tailwind only, rich hero canvas animation, colors and energy matching their field. End your response with </body></html>."""
 
 
 def generate_portfolio_html(cv_text: str) -> str:
-    from .cv_analyzer import build_prompt_context
-
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
     cv_text = _truncate_cv(cv_text)
-    design_context = build_prompt_context(cv_text)
-    system = SYSTEM_PROMPT + '\n\n' + design_context
     logger.debug("Sending CV to Claude (%d chars)", len(cv_text))
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=4000,
-        system=system,
+        max_tokens=15000,
+        system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": USER_PROMPT_TEMPLATE.format(cv_text=cv_text)}],
     )
 
-    html = _strip_code_fences(response.content[0].text)
+    block = response.content[0]
+    if block.type != 'text':
+        raise ValueError(f"Unexpected Claude response block type: {block.type}")
+    html = _strip_code_fences(block.text)
+    html = _dedup_html(html)
     logger.info("Final HTML: %d chars, stop_reason=%s", len(html), response.stop_reason)
     return html
 
 
-def _truncate_cv(text: str, max_chars: int = 3500) -> str:
+def _dedup_html(html: str) -> str:
+    second = html.lower().find('<!doctype', 10)
+    if second != -1:
+        html = html[:second].rstrip()
+    return html
+
+
+def _truncate_cv(text: str, max_chars: int = 6000) -> str:
     if len(text) <= max_chars:
         return text
     return text[:max_chars] + '\n[CV truncated]'
@@ -58,9 +72,7 @@ def _truncate_cv(text: str, max_chars: int = 3500) -> str:
 def _strip_code_fences(text: str) -> str:
     import re
     text = text.strip()
-    if text.startswith("```"):
-        text = text[text.index("\n") + 1:]
-    if text.endswith("```"):
-        text = text[:text.rfind("```")]
+    text = re.sub(r'^```[^\n]*\n', '', text)
+    text = re.sub(r'\n?```\s*$', '', text)
     text = re.sub(r'<!--.*?-->', '', text, flags=re.DOTALL)
     return text.strip()
