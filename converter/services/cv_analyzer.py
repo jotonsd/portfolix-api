@@ -267,24 +267,27 @@ def _extract_header(cv_text: str) -> tuple:
 # ── Brief formatter ───────────────────────────────────────────────────────
 
 def _format_brief(a: dict) -> str:
-    b          = a['brief']
-    seniority  = '' if a['seniority'] == 'mid' else a['seniority'].capitalize() + ' '
+    b = a['brief']
+    seniority = '' if a['seniority'] == 'mid' else a['seniority'].capitalize() + ' '
     role_label = a['title'] or (seniority + a['profession'].replace('_', ' ').title())
-    exp_label  = f' with {a["years_exp"]}+ years of experience' if a['years_exp'] >= 1 else ''
-    skills_str = ', '.join(a['top_skills']) if a['top_skills'] else 'not listed'
-    industry   = a['industry']
+    exp_label = f' · {a["years_exp"]}yrs' if a['years_exp'] >= 1 else ''
+    skills_str = ', '.join(a['top_skills'][:5]) if a['top_skills'] else 'none'
+
+    hexes = re.findall(r'#[0-9a-fA-F]{3,6}', b['colors'])
+    colors_out = ' · '.join(hexes[:2]) if hexes else b['colors'].split(',')[0][:30]
+
+    font_out = re.split(r' — | for |,', b['typography'])[0].strip()
+
+    hero_out = re.split(r' — |, or ', b['hero_animation'])[0].strip()[:70]
+
+    style_out = b['aesthetic'].split(' — ')[0].strip()
 
     return (
-        '── PRE-ANALYZED DESIGN BRIEF ──\n'
-        f'Person:    {role_label}{exp_label}\n'
-        f'Industry:  {industry}\n'
-        f'Key stack: {skills_str}\n\n'
-        'Use this brief to drive EVERY design decision:\n'
-        f'• Aesthetic:        {b["aesthetic"]}\n'
-        f'• Color palette:    {b["colors"]}\n'
-        f'• Typography:       {b["typography"]}\n'
-        f'• Hero animation:   {b["hero_animation"]}\n'
-        f'• Emotional tone:   {b["mood"]}\n\n'
-        'This brief is non-negotiable. Do not default to a generic dark theme.\n'
-        'Every color, font, animation, and layout must feel inevitable for this exact person.'
+        'DESIGN BRIEF\n'
+        f'Role: {role_label}{exp_label} · {a["industry"]}\n'
+        f'Stack: {skills_str}\n'
+        f'Colors: {colors_out}\n'
+        f'Font: {font_out}\n'
+        f'Hero: {hero_out}\n'
+        f'Style: {style_out}'
     )
