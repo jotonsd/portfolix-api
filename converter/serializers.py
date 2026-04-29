@@ -7,7 +7,7 @@ class CVUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = CVUpload
         fields = ['id', 'cv_file', 'status', 'generated_html', 'error_message', 'created_at']
-        read_only_fields = ['id', 'status', 'generated_html', 'error_message', 'created_at']
+        read_only_fields = ['id', 'status', 'generated_html', 'error_message', 'created_at', 'user']
 
     def validate_cv_file(self, value):
         from .services.extractor import SUPPORTED_EXTENSIONS

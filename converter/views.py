@@ -4,6 +4,7 @@ from celery.app.control import Control
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -17,20 +18,29 @@ logger = logging.getLogger('converter')
 
 
 class ConvertCVView(APIView):
-    """
-    POST /api/convert/
-    Upload a PDF CV. Returns immediately with status=processing.
-    Poll GET /api/convert/<id>/ until status=completed.
-    """
     parser_classes = [MultiPartParser]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        subscription = getattr(request.user, 'subscription', None)
+        if not subscription:
+            return Response(
+                {'error': 'No active plan found. Please contact support.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        can_generate, reason = subscription.can_generate()
+        if not can_generate:
+            return Response({'error': reason}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = CVUploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        instance = serializer.save(status='processing')
-        logger.info("CV upload received — id=%s file=%s", instance.pk, instance.cv_file.name)
+        instance = serializer.save(status='processing', user=request.user)
+        logger.info("CV upload received — id=%s user=%s file=%s", instance.pk, request.user.email, instance.cv_file.name)
+
+        subscription.increment()
 
         instance.cv_file.seek(0)
         cv_bytes_hex = instance.cv_file.read().hex()
@@ -43,14 +53,11 @@ class ConvertCVView(APIView):
 
 
 class CVDetailView(APIView):
-    """
-    GET /api/convert/<id>/
-    Poll until status=completed or status=failed.
-    """
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         try:
-            instance = CVUpload.objects.get(pk=pk)
+            instance = CVUpload.objects.get(pk=pk, user=request.user)
         except CVUpload.DoesNotExist:
             return Response({"error": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -59,10 +66,7 @@ class CVDetailView(APIView):
 
 
 class CVPreviewView(APIView):
-    """
-    GET /api/convert/<id>/preview/
-    Returns raw HTML — open in browser to render the portfolio.
-    """
+    permission_classes = [AllowAny]
 
     def get(self, request, pk):
         try:
@@ -82,15 +86,9 @@ class CVPreviewView(APIView):
 
 
 class JobStatusView(APIView):
-    """
-    GET /api/jobs/
-    Shows all active, scheduled, and recent jobs from Celery + DB records.
-    """
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        control = Control(celery_app)
-
-        # Active tasks currently running on workers
         active_raw = celery_app.control.inspect(timeout=2).active() or {}
         active = []
         for worker, tasks in active_raw.items():
@@ -104,7 +102,6 @@ class JobStatusView(APIView):
                     "state": "active",
                 })
 
-        # Scheduled/reserved tasks waiting to run
         reserved_raw = celery_app.control.inspect(timeout=2).reserved() or {}
         reserved = []
         for worker, tasks in reserved_raw.items():
@@ -116,27 +113,19 @@ class JobStatusView(APIView):
                     "state": "queued",
                 })
 
-        # DB records by status
         db_summary = {
-            "processing": CVUpload.objects.filter(status='processing').count(),
-            "completed":  CVUpload.objects.filter(status='completed').count(),
-            "failed":     CVUpload.objects.filter(status='failed').count(),
-            "pending":    CVUpload.objects.filter(status='pending').count(),
+            "processing": CVUpload.objects.filter(user=request.user, status='processing').count(),
+            "completed":  CVUpload.objects.filter(user=request.user, status='completed').count(),
+            "failed":     CVUpload.objects.filter(user=request.user, status='failed').count(),
         }
 
-        # Recent 10 jobs from DB
         recent = list(
-            CVUpload.objects.values('id', 'status', 'error_message', 'created_at', 'updated_at')
+            CVUpload.objects.filter(user=request.user)
+            .values('id', 'status', 'error_message', 'created_at', 'updated_at')
             .order_by('-created_at')[:10]
         )
 
         return Response({
-            "workers": {
-                "active_tasks": active,
-                "queued_tasks": reserved,
-            },
-            "database": {
-                "summary": db_summary,
-                "recent_jobs": recent,
-            },
+            "workers": {"active_tasks": active, "queued_tasks": reserved},
+            "database": {"summary": db_summary, "recent_jobs": recent},
         })
