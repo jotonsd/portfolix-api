@@ -2,8 +2,8 @@ import logging
 
 from celery import shared_task
 
+from django.conf import settings
 from .services.extractor import extract_text
-from .services.claude_service import generate_portfolio_html
 
 logger = logging.getLogger('converter')
 
@@ -23,6 +23,12 @@ def process_cv_task(self, instance_id: int, cv_bytes_hex: str, filename: str):
 
         logger.debug("Extracted %d chars from '%s' id=%s", len(cv_text), filename, instance_id)
 
+        if settings.AI_PROVIDER == 'claude':
+            from .services.claude_service import generate_portfolio_html
+        else:
+            from .services.gemini_service import generate_portfolio_html
+
+        logger.info("Using AI provider: %s", settings.AI_PROVIDER)
         html = generate_portfolio_html(cv_text)
 
         instance.generated_html = html

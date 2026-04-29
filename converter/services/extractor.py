@@ -2,7 +2,6 @@ import base64
 import io
 import logging
 
-import anthropic
 import fitz  # PyMuPDF
 from django.conf import settings
 from docx import Document
@@ -21,6 +20,12 @@ SUPPORTED_EXTENSIONS = {
 
 IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
 DOC_EXTENSIONS   = {'doc', 'docx'}
+
+EXTRACT_PROMPT = (
+    "This is a CV/resume image. Extract ALL text from it exactly as it appears. "
+    "Preserve the structure — sections, headings, bullet points, dates. "
+    "Return only the extracted text, nothing else."
+)
 
 
 def extract_text(file_bytes: bytes, filename: str) -> str:
@@ -49,7 +54,33 @@ def _extract_from_pdf(file_bytes: bytes) -> str:
 
 
 def _extract_from_image(file_bytes: bytes, ext: str) -> str:
-    """Send image to Claude Vision and extract CV text from it."""
+    if settings.AI_PROVIDER == 'claude':
+        return _extract_image_claude(file_bytes, ext)
+    return _extract_image_gemini(file_bytes, ext)
+
+
+def _extract_image_gemini(file_bytes: bytes, ext: str) -> str:
+    from google import genai
+    from google.genai import types
+
+    mime = SUPPORTED_EXTENSIONS[ext]
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+    response = client.models.generate_content(
+        model='gemini-flash-latest',
+        contents=[
+            types.Part.from_bytes(data=file_bytes, mime_type=mime),
+            types.Part.from_text(text=EXTRACT_PROMPT),
+        ],
+    )
+    text = response.text.strip()
+    logger.debug("Image CV extracted via Gemini Vision: %d chars", len(text))
+    return text
+
+
+def _extract_image_claude(file_bytes: bytes, ext: str) -> str:
+    import anthropic
+
     mime = SUPPORTED_EXTENSIONS[ext]
     b64 = base64.standard_b64encode(file_bytes).decode("utf-8")
 
@@ -57,29 +88,13 @@ def _extract_from_image(file_bytes: bytes, ext: str) -> str:
     message = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=4000,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": mime,
-                            "data": b64,
-                        },
-                    },
-                    {
-                        "type": "text",
-                        "text": (
-                            "This is a CV/resume image. Extract ALL text from it exactly as it appears. "
-                            "Preserve the structure — sections, headings, bullet points, dates. "
-                            "Return only the extracted text, nothing else."
-                        ),
-                    },
-                ],
-            }
-        ],
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": "image", "source": {"type": "base64", "media_type": mime, "data": b64}},
+                {"type": "text", "text": EXTRACT_PROMPT},
+            ],
+        }],
     )
     text = message.content[0].text.strip()
     logger.debug("Image CV extracted via Claude Vision: %d chars", len(text))

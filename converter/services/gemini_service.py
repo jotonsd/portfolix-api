@@ -1,6 +1,7 @@
 import logging
 
-import anthropic
+from google import genai
+from google.genai import types
 from django.conf import settings
 
 logger = logging.getLogger('converter')
@@ -74,47 +75,36 @@ CV:
 {cv_text}
 ---
 
-Return ONLY complete HTML from <!DOCTYPE html> to </html>. Static hardcoded HTML. No JS template literals. No .map()."""
+Return ONLY complete HTML from <!DOCTYPE html> to </html>. Static hardcoded HTML. No template literals. No .map(). No HTML comments."""
 
 
 def generate_portfolio_html(cv_text: str) -> str:
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-    logger.debug("Sending CV to Claude (%d chars)", len(cv_text))
+    logger.debug("Sending CV to Gemini (%d chars)", len(cv_text))
 
-    messages = [{"role": "user", "content": USER_PROMPT_TEMPLATE.format(cv_text=cv_text)}]
-
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=16000,
-        system=SYSTEM_PROMPT,
-        messages=messages,
+    chat = client.chats.create(
+        model='gemini-flash-latest',
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            max_output_tokens=14000,
+        ),
     )
 
-    html = response.content[0].text
-    logger.debug("Claude first response: %d chars, stop_reason=%s", len(html), response.stop_reason)
+    response = chat.send_message(USER_PROMPT_TEMPLATE.format(cv_text=cv_text))
+    html = response.text
+    logger.debug("Gemini first response: %d chars", len(html))
 
     max_continuations = 3
     continuations = 0
-    while response.stop_reason == "max_tokens" and "</html>" not in html and continuations < max_continuations:
+    while "</html>" not in html and continuations < max_continuations:
         continuations += 1
         logger.warning("HTML truncated — requesting continuation %d", continuations)
-
-        messages.append({"role": "assistant", "content": html})
-        messages.append({
-            "role": "user",
-            "content": "Continue exactly where you left off. Complete all remaining sections and close every open tag. End with </body></html>.",
-        })
-
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=8000,
-            system=SYSTEM_PROMPT,
-            messages=messages,
+        response = chat.send_message(
+            "Continue exactly where you left off. Complete all remaining sections and close every open tag. End with </body></html>."
         )
-
-        html += response.content[0].text
-        logger.debug("Continuation %d: +%d chars, stop_reason=%s", continuations, len(response.content[0].text), response.stop_reason)
+        html += response.text
+        logger.debug("Continuation %d: +%d chars", continuations, len(response.text))
 
     html = _strip_code_fences(html)
     logger.info("Final HTML: %d chars, continuations=%d", len(html), continuations)

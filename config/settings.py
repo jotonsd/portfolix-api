@@ -91,6 +91,8 @@ REST_FRAMEWORK = {
 }
 
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+AI_PROVIDER = os.getenv('AI_PROVIDER', 'gemini')
 
 # Celery
 CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
