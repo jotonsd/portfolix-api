@@ -87,7 +87,7 @@ def generate_portfolio_html(cv_text: str) -> str:
         model='gemini-flash-latest',
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
-            max_output_tokens=14000,
+            max_output_tokens=10000,
         ),
     )
 

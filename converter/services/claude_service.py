@@ -86,7 +86,7 @@ def generate_portfolio_html(cv_text: str) -> str:
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=16000,
+        max_tokens=10000,
         system=SYSTEM_PROMPT,
         messages=messages,
     )
@@ -108,7 +108,7 @@ def generate_portfolio_html(cv_text: str) -> str:
 
         response = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=8000,
+            max_tokens=5000,
             system=SYSTEM_PROMPT,
             messages=messages,
         )
