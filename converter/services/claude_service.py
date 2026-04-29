@@ -78,8 +78,12 @@ Return ONLY complete HTML from <!DOCTYPE html> to </html>. Static hardcoded HTML
 
 
 def generate_portfolio_html(cv_text: str) -> str:
+    from .cv_analyzer import build_prompt_context
+
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
+    design_context = build_prompt_context(cv_text)
+    system = SYSTEM_PROMPT + '\n\n' + design_context
     logger.debug("Sending CV to Claude (%d chars)", len(cv_text))
 
     messages = [{"role": "user", "content": USER_PROMPT_TEMPLATE.format(cv_text=cv_text)}]
@@ -87,7 +91,7 @@ def generate_portfolio_html(cv_text: str) -> str:
     response = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=10000,
-        system=SYSTEM_PROMPT,
+        system=system,
         messages=messages,
     )
 

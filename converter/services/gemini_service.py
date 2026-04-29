@@ -79,14 +79,18 @@ Return ONLY complete HTML from <!DOCTYPE html> to </html>. Static hardcoded HTML
 
 
 def generate_portfolio_html(cv_text: str) -> str:
+    from .cv_analyzer import build_prompt_context
+
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
+    design_context = build_prompt_context(cv_text)
+    system = SYSTEM_PROMPT + '\n\n' + design_context
     logger.debug("Sending CV to Gemini (%d chars)", len(cv_text))
 
     chat = client.chats.create(
         model='gemini-flash-latest',
         config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
+            system_instruction=system,
             max_output_tokens=10000,
         ),
     )
