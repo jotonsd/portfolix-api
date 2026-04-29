@@ -56,7 +56,20 @@ def _extract_from_pdf(file_bytes: bytes) -> str:
 def _extract_from_image(file_bytes: bytes, ext: str) -> str:
     if settings.AI_PROVIDER == 'claude':
         return _extract_image_claude(file_bytes, ext)
+    if settings.AI_PROVIDER == 'template':
+        return _extract_image_tesseract(file_bytes)
     return _extract_image_gemini(file_bytes, ext)
+
+
+def _extract_image_tesseract(file_bytes: bytes) -> str:
+    import pytesseract
+    from PIL import Image
+    import io
+
+    image = Image.open(io.BytesIO(file_bytes))
+    text = pytesseract.image_to_string(image).strip()
+    logger.debug("Image CV extracted via Tesseract: %d chars", len(text))
+    return text
 
 
 def _extract_image_gemini(file_bytes: bytes, ext: str) -> str:

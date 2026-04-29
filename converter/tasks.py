@@ -25,6 +25,8 @@ def process_cv_task(self, instance_id: int, cv_bytes_hex: str, filename: str):
 
         if settings.AI_PROVIDER == 'claude':
             from .services.claude_service import generate_portfolio_html
+        elif settings.AI_PROVIDER == 'template':
+            from .services.template_service import generate_portfolio_html
         else:
             from .services.gemini_service import generate_portfolio_html
 
