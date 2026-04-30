@@ -44,12 +44,17 @@ def process_cv_task(self, instance_id: int, cv_bytes_hex: str, filename: str):
         logger.error("CVUpload id=%s not found", instance_id)
 
     except Exception as exc:
-        logger.error("Task failed — id=%s error=%s", instance_id, exc, exc_info=True)
-        try:
-            instance = CVUpload.objects.get(pk=instance_id)
-            instance.status = 'failed'
-            instance.error_message = str(exc)
-            instance.save()
-        except Exception:
-            logger.error("Failed to update CVUpload status for id=%s", instance_id, exc_info=True)
-        raise self.retry(exc=exc)
+        attempt = self.request.retries + 1
+        logger.error("Task failed — id=%s attempt=%s/%s error=%s", instance_id, attempt, self.max_retries + 1, exc, exc_info=True)
+        if self.request.retries >= self.max_retries:
+            # All 3 attempts exhausted — mark as permanently failed
+            try:
+                instance = CVUpload.objects.get(pk=instance_id)
+                instance.status = 'failed'
+                instance.error_message = str(exc)
+                instance.save()
+            except Exception:
+                logger.error("Failed to update CVUpload status for id=%s", instance_id, exc_info=True)
+        else:
+            # Still retrying — keep status as 'processing'
+            raise self.retry(exc=exc)

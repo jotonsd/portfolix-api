@@ -50,8 +50,15 @@ def _extract_from_pdf(file_bytes: bytes) -> str:
         doc = fitz.open(stream=file_bytes, filetype="pdf")
     except Exception as e:
         raise ValueError(f"Could not open PDF: {e}") from e
-    text = "\n".join(page.get_text() for page in doc).strip()
-    doc.close()
+    try:
+        # Process page by page and discard each after reading — avoids holding all pages in RAM
+        parts = []
+        for page in doc:
+            parts.append(page.get_text())
+            page = None  # release page object immediately
+        text = "\n".join(parts).strip()
+    finally:
+        doc.close()
     logger.debug("PDF extracted: %d chars", len(text))
     return text
 

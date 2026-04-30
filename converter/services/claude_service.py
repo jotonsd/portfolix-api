@@ -9,7 +9,7 @@ SYSTEM_PROMPT = """You are an elite creative developer. Read the CV carefully an
 
 Every design decision — color palette, typography, layout, animations, interactions — must be inspired by who this person is: their profession, industry, personality, and story. A chef, a data scientist, and a lawyer must look completely different.
 
-Do NOT default to dark backgrounds. Choose colors that feel alive for this person — vibrant, warm, or bold. Light, gradient, or colorful backgrounds are encouraged.
+Choose colors that feel alive for this person — vibrant, warm, or bold. Light, gradient, or colorful backgrounds are encouraged.
 
 STYLING: Use ONLY Tailwind CSS classes for all styling. Include the Tailwind CDN and a Google Font in <head>. Do NOT write any <style> tags or inline style= attributes anywhere in the HTML. Every visual style must come from Tailwind utility classes only.
 

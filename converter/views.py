@@ -85,6 +85,23 @@ class CVPreviewView(APIView):
         return HttpResponse(html, content_type="text/html; charset=utf-8")
 
 
+class PublicPortfolioView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request, token):
+        try:
+            instance = CVUpload.objects.get(share_token=token)
+        except CVUpload.DoesNotExist:
+            return HttpResponse("Portfolio not found.", status=404, content_type="text/plain")
+
+        if instance.status != 'completed' or not instance.generated_html:
+            return HttpResponse("Portfolio not ready yet.", status=404, content_type="text/plain")
+
+        html = _strip_code_fences(instance.generated_html)
+        return HttpResponse(html, content_type="text/html; charset=utf-8")
+
+
 def _celery_inspect(method: str) -> dict:
     try:
         return getattr(celery_app.control.inspect(timeout=2), method)() or {}
@@ -127,13 +144,20 @@ class JobStatusView(APIView):
             "failed":     CVUpload.objects.filter(user=request.user, status='failed').count(),
         }
 
+        page = max(1, int(request.query_params.get('page', 1)))
+        page_size = max(1, min(50, int(request.query_params.get('page_size', 8))))
+        qs = CVUpload.objects.filter(user=request.user).order_by('-created_at')
+        total = qs.count()
+        offset = (page - 1) * page_size
         recent = list(
-            CVUpload.objects.filter(user=request.user)
-            .values('id', 'status', 'error_message', 'created_at', 'updated_at')
-            .order_by('-created_at')[:10]
+            qs.values('id', 'share_token', 'status', 'error_message', 'created_at', 'updated_at')[offset:offset + page_size]
         )
 
         return Response({
             "workers": {"active_tasks": active, "queued_tasks": reserved},
-            "database": {"summary": db_summary, "recent_jobs": recent},
+            "database": {
+                "summary": db_summary,
+                "recent_jobs": recent,
+                "pagination": {"page": page, "page_size": page_size, "total": total, "total_pages": max(1, -(-total // page_size))},
+            },
         })

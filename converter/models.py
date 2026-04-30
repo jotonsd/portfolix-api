@@ -1,3 +1,4 @@
+import uuid
 from django.conf import settings
 from django.db import models
 
@@ -11,6 +12,7 @@ class CVUpload(models.Model):
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='cv_uploads', null=True, blank=True)
+    share_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     cv_file = models.FileField(upload_to='cvs/')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     generated_html = models.TextField(blank=True, null=True)
