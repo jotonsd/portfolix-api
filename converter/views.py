@@ -85,6 +85,50 @@ class CVPreviewView(APIView):
         return HttpResponse(html, content_type="text/html; charset=utf-8")
 
 
+class CVDownloadView(APIView):
+    """Download the AI-generated portfolio HTML."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            instance = CVUpload.objects.get(pk=pk, user=request.user)
+        except CVUpload.DoesNotExist:
+            return HttpResponse("Not found.", status=404, content_type="text/plain")
+
+        if instance.status != 'completed' or not instance.generated_html:
+            return HttpResponse("Portfolio not ready.", status=400, content_type="text/plain")
+
+        html = _strip_code_fences(instance.generated_html)
+        response = HttpResponse(html, content_type="text/html; charset=utf-8")
+        response['Content-Disposition'] = f'attachment; filename="portfolio-{pk}.html"'
+        return response
+
+
+class CVFileDownloadView(APIView):
+    """Download the original uploaded CV file."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            instance = CVUpload.objects.get(pk=pk, user=request.user)
+        except CVUpload.DoesNotExist:
+            return HttpResponse("Not found.", status=404, content_type="text/plain")
+
+        if not instance.cv_file:
+            return HttpResponse("CV file not available.", status=404, content_type="text/plain")
+
+        import os
+        filename = os.path.basename(instance.cv_file.name)
+        with instance.cv_file.open('rb') as f:
+            content = f.read()
+
+        import mimetypes
+        mime, _ = mimetypes.guess_type(filename)
+        response = HttpResponse(content, content_type=mime or 'application/octet-stream')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+
 class PublicPortfolioView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]

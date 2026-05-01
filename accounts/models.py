@@ -23,8 +23,9 @@ class UserManager(BaseUserManager):
 
 class User(AbstractUser):
     ADMIN = 'admin'
+    STAFF = 'staff'
     USER = 'user'
-    USER_TYPE_CHOICES = [(ADMIN, 'Admin'), (USER, 'User')]
+    USER_TYPE_CHOICES = [(ADMIN, 'Admin'), (STAFF, 'Staff'), (USER, 'User')]
 
     username = None
     email = models.EmailField(unique=True)
@@ -69,6 +70,7 @@ class UserSubscription(models.Model):
     cv_count = models.IntegerField(default=0)
     period_start = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField(null=True, blank=True)
+    stripe_subscription_id = models.CharField(max_length=255, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -96,3 +98,35 @@ class UserSubscription(models.Model):
         # Atomic DB-level increment — prevents race condition under concurrent requests
         UserSubscription.objects.filter(pk=self.pk).update(cv_count=F('cv_count') + 1)
         self.refresh_from_db(fields=['cv_count'])
+
+
+class Transaction(models.Model):
+    PAYMENT = 'payment'
+    REFUND = 'refund'
+    TYPE_CHOICES = [(PAYMENT, 'Payment'), (REFUND, 'Refund')]
+
+    STATUS_PAID = 'paid'
+    STATUS_FAILED = 'failed'
+    STATUS_REFUNDED = 'refunded'
+
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
+    amount = models.IntegerField(help_text='Amount in cents')
+    currency = models.CharField(max_length=10, default='usd')
+    plan = models.CharField(max_length=50, blank=True)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default=PAYMENT)
+    status = models.CharField(max_length=50, default=STATUS_PAID)
+    description = models.CharField(max_length=255, blank=True)
+    stripe_session_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
+    stripe_subscription_id = models.CharField(max_length=255, blank=True)
+    stripe_invoice_id = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user} — {self.plan} — ${self.amount / 100:.2f}"
+
+    @property
+    def amount_display(self):
+        return self.amount / 100

@@ -57,18 +57,24 @@ class ProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'email', 'date_joined', 'plan', 'cv_count', 'cv_limit', 'user_type']
 
     def get_plan(self, obj):
+        if obj.user_type in (User.ADMIN, User.STAFF):
+            return None
         try:
             return obj.subscription.plan.name
         except ObjectDoesNotExist:
             return 'free'
 
     def get_cv_count(self, obj):
+        if obj.user_type in (User.ADMIN, User.STAFF):
+            return None
         try:
             return obj.subscription.cv_count
         except ObjectDoesNotExist:
             return 0
 
     def get_cv_limit(self, obj):
+        if obj.user_type in (User.ADMIN, User.STAFF):
+            return None
         try:
             limit = obj.subscription.plan.cv_limit
             return limit if limit != -1 else 'unlimited'
