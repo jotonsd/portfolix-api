@@ -166,6 +166,7 @@ class AdminUserDetailView(APIView):
 def _tx_to_dict(tx, include_user=False):
     d = {
         'id': tx.id,
+        'invoice_number': tx.invoice_number,
         'amount': tx.amount,
         'amount_display': round(tx.amount / 100, 2),
         'currency': tx.currency.upper(),

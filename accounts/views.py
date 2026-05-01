@@ -252,7 +252,20 @@ class StripeWebhookView(APIView):
                     sub.plan = plan
                     sub.period_start = timezone.now()
                     sub.stripe_subscription_id = stripe_sub_id
-                    sub.save(update_fields=['plan', 'period_start', 'stripe_subscription_id'])
+                    # Get exact billing period end from Stripe subscription item
+                    expires_at = None
+                    if stripe_sub_id:
+                        try:
+                            from datetime import datetime, timezone as dt_tz
+                            stripe_sub = stripe.Subscription.retrieve(stripe_sub_id, expand=['items'])
+                            items = stripe_sub.get('items', {}).get('data', [])
+                            period_end = items[0].get('current_period_end') if items else None
+                            if period_end:
+                                expires_at = datetime.fromtimestamp(period_end, tz=dt_tz.utc)
+                        except Exception:
+                            pass
+                    sub.expires_at = expires_at
+                    sub.save(update_fields=['plan', 'period_start', 'stripe_subscription_id', 'expires_at'])
                     amount_total = session.get('amount_total') or 0
                     currency = session.get('currency', 'usd')
                     session_id = session.get('id') or None
@@ -275,5 +288,109 @@ class StripeWebhookView(APIView):
             except Exception as e:
                 logger.error("Webhook upgrade error: %s", e, exc_info=True)
                 return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        elif event['type'] == 'invoice.payment_succeeded':
+            # Renewal payment succeeded — record the transaction
+            try:
+                invoice = event['data']['object']
+                stripe_sub_id = invoice.get('subscription') or ''
+                if not stripe_sub_id:
+                    return Response({'status': 'ok'})
+                # Skip the initial invoice (already recorded via checkout.session.completed)
+                if invoice.get('billing_reason') == 'subscription_create':
+                    return Response({'status': 'ok'})
+                sub = UserSubscription.objects.select_related('user', 'plan').get(
+                    stripe_subscription_id=stripe_sub_id
+                )
+                amount = invoice.get('amount_paid') or 0
+                currency = invoice.get('currency', 'usd')
+                invoice_id = invoice.get('id') or ''
+                Transaction.objects.get_or_create(
+                    stripe_invoice_id=invoice_id,
+                    defaults=dict(
+                        user=sub.user,
+                        amount=amount,
+                        currency=currency,
+                        plan=sub.plan.name,
+                        type=Transaction.PAYMENT,
+                        status=Transaction.STATUS_PAID,
+                        description=f"Portfolix {sub.plan.display_name} renewal",
+                        stripe_subscription_id=stripe_sub_id,
+                    ),
+                )
+                # Reset monthly counter and set next period end
+                sub.cv_count = 0
+                sub.period_start = timezone.now()
+                period_end_ts = invoice.get('lines', {}).get('data', [{}])[0].get('period', {}).get('end')
+                if period_end_ts:
+                    from datetime import datetime, timezone as dt_tz
+                    sub.expires_at = datetime.fromtimestamp(period_end_ts, tz=dt_tz.utc)
+                sub.save(update_fields=['cv_count', 'period_start', 'expires_at'])
+                logger.info("Renewal recorded for %s plan=%s", sub.user.email, sub.plan.name)
+            except UserSubscription.DoesNotExist:
+                logger.warning("No subscription found for stripe_sub_id=%s", stripe_sub_id)
+            except Exception as e:
+                logger.error("Renewal recording error: %s", e, exc_info=True)
+
+        elif event['type'] == 'invoice.payment_failed':
+            # Payment failed — log it; Stripe will retry automatically
+            try:
+                invoice = event['data']['object']
+                stripe_sub_id = invoice.get('subscription') or ''
+                attempt = invoice.get('attempt_count', 1)
+                logger.warning("Payment failed (attempt %s) for subscription %s", attempt, stripe_sub_id)
+                # Record a failed transaction so it shows in the ledger
+                if stripe_sub_id:
+                    try:
+                        sub = UserSubscription.objects.select_related('user', 'plan').get(
+                            stripe_subscription_id=stripe_sub_id
+                        )
+                        invoice_id = invoice.get('id') or ''
+                        amount = invoice.get('amount_due') or 0
+                        currency = invoice.get('currency', 'usd')
+                        Transaction.objects.get_or_create(
+                            stripe_invoice_id=invoice_id,
+                            defaults=dict(
+                                user=sub.user,
+                                amount=amount,
+                                currency=currency,
+                                plan=sub.plan.name,
+                                type=Transaction.PAYMENT,
+                                status=Transaction.STATUS_FAILED,
+                                description=f"Portfolix {sub.plan.display_name} renewal (failed — attempt {attempt})",
+                                stripe_subscription_id=stripe_sub_id,
+                            ),
+                        )
+                    except UserSubscription.DoesNotExist:
+                        pass
+            except Exception as e:
+                logger.error("Payment failed handler error: %s", e, exc_info=True)
+
+        elif event['type'] == 'customer.subscription.deleted':
+            # Stripe gave up retrying — downgrade user to free plan
+            try:
+                subscription = event['data']['object']
+                stripe_sub_id = subscription.get('id') or ''
+                logger.info("Subscription cancelled: %s", stripe_sub_id)
+                if stripe_sub_id:
+                    try:
+                        sub = UserSubscription.objects.select_related('user', 'plan').get(
+                            stripe_subscription_id=stripe_sub_id
+                        )
+                        old_plan_name = sub.plan.name
+                        free_plan = Plan.objects.get(name=Plan.FREE)
+                        sub.plan = free_plan
+                        sub.stripe_subscription_id = ''
+                        sub.cv_count = 0
+                        sub.period_start = timezone.now()
+                        sub.save(update_fields=['plan', 'stripe_subscription_id', 'cv_count', 'period_start'])
+                        logger.info(
+                            "Downgraded %s from %s to free (subscription deleted)",
+                            sub.user.email, old_plan_name,
+                        )
+                    except UserSubscription.DoesNotExist:
+                        logger.warning("No subscription found for cancelled stripe_sub_id=%s", stripe_sub_id)
+            except Exception as e:
+                logger.error("Subscription deleted handler error: %s", e, exc_info=True)
 
         return Response({'status': 'ok'})

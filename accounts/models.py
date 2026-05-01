@@ -81,10 +81,18 @@ class UserSubscription(models.Model):
         if not self.plan.is_monthly:
             return
         now = timezone.now()
-        if now.month != self.period_start.month or now.year != self.period_start.year:
-            self.cv_count = 0
-            self.period_start = now
-            self.save(update_fields=['cv_count', 'period_start'])
+        # Use expires_at if set (exact billing cycle); fall back to calendar month
+        if self.expires_at:
+            if now >= self.expires_at:
+                self.cv_count = 0
+                self.period_start = now
+                self.expires_at = None  # webhook will set it on next renewal
+                self.save(update_fields=['cv_count', 'period_start', 'expires_at'])
+        else:
+            if now.month != self.period_start.month or now.year != self.period_start.year:
+                self.cv_count = 0
+                self.period_start = now
+                self.save(update_fields=['cv_count', 'period_start'])
 
     def can_generate(self):
         if self.plan.cv_limit == -1:
@@ -118,7 +126,7 @@ class Transaction(models.Model):
     description = models.CharField(max_length=255, blank=True)
     stripe_session_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
     stripe_subscription_id = models.CharField(max_length=255, blank=True)
-    stripe_invoice_id = models.CharField(max_length=255, blank=True)
+    stripe_invoice_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -130,3 +138,7 @@ class Transaction(models.Model):
     @property
     def amount_display(self):
         return self.amount / 100
+
+    @property
+    def invoice_number(self):
+        return f"TRX-{self.created_at.strftime('%Y%m')}-{self.id:04d}"
