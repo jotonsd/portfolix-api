@@ -21,6 +21,8 @@ HERO ANIMATION (required): The hero section must have a full-screen canvas anima
 - A marketer → rising signal ripple rings
 Invent something original. Particle count 80–150. Each particle has its own speed, size, opacity, lifecycle. Written in plain JS (var only, no const/let/arrow functions/template literals) in one <script> at end of body.
 
+IMPORTANT: It must be advanced portfolio design with modern popular design with all kind of features like animation any icon any movement etc. must be advance portfolio design
+
 Rules:
 - Return raw HTML only. The very last characters you output MUST be </body></html>. You have 15000 tokens — use them, never stop early, never truncate.
 - No invented facts. CV content only.

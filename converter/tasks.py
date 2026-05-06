@@ -47,12 +47,16 @@ def process_cv_task(self, instance_id: int, cv_bytes_hex: str, filename: str):
         attempt = self.request.retries + 1
         logger.error("Task failed — id=%s attempt=%s/%s error=%s", instance_id, attempt, self.max_retries + 1, exc, exc_info=True)
         if self.request.retries >= self.max_retries:
-            # All 3 attempts exhausted — mark as permanently failed
+            # All attempts exhausted — mark failed and refund the generation slot
             try:
                 instance = CVUpload.objects.get(pk=instance_id)
                 instance.status = 'failed'
                 instance.error_message = str(exc)
                 instance.save()
+                sub = getattr(instance.user, 'subscription', None)
+                if sub and sub.plan.cv_limit != -1:
+                    sub.decrement()
+                    logger.info("Refunded cv_count for user=%s after permanent failure id=%s", instance.user_id, instance_id)
             except Exception:
                 logger.error("Failed to update CVUpload status for id=%s", instance_id, exc_info=True)
         else:

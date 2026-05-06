@@ -8,6 +8,7 @@ PYTHON="$VENV/bin/python"
 GUNICORN="$VENV/bin/gunicorn"
 CELERY="$VENV/bin/celery"
 FLOWER_PORT="${FLOWER_PORT:-5555}"
+STRIPE_PORT="${STRIPE_PORT:-8000}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -28,6 +29,7 @@ cleanup() {
     [ -n "$GUNICORN_PID" ] && kill "$GUNICORN_PID" 2>/dev/null && ok "Gunicorn stopped"
     [ -n "$CELERY_PID" ]   && kill "$CELERY_PID"   2>/dev/null && ok "Celery stopped"
     [ -n "$FLOWER_PID" ]   && kill "$FLOWER_PID"   2>/dev/null && ok "Flower stopped"
+    [ -n "$STRIPE_PID" ]   && kill "$STRIPE_PID"   2>/dev/null && ok "Stripe listener stopped"
     ok "All services stopped. Goodbye."
 }
 trap cleanup EXIT INT TERM
@@ -91,9 +93,26 @@ log "Running system check..."
 $PYTHON manage.py check
 ok "System check passed"
 
-# ── 9. Start Celery worker ─────────────────────────────────────────────────────
+# ── 9. Stripe webhook listener ────────────────────────────────────────────────
 HOST="${DJANGO_HOST:-0.0.0.0}"
 PORT="${DJANGO_PORT:-8000}"
+
+if command -v stripe &>/dev/null; then
+    log "Starting Stripe webhook listener → http://localhost:$PORT/api/auth/stripe/webhook/"
+    stripe listen \
+        --forward-to "http://localhost:$PORT/api/auth/stripe/webhook/" \
+        --log-level warn \
+        > "$PROJECT_DIR/logs/stripe.log" 2>&1 &
+    STRIPE_PID=$!
+    sleep 2
+    kill -0 "$STRIPE_PID" 2>/dev/null \
+        && ok "Stripe listener started (PID $STRIPE_PID)" \
+        || warn "Stripe listener failed to start — webhooks will not be forwarded locally"
+else
+    warn "Stripe CLI not found — skipping webhook listener (install: brew install stripe/stripe-cli/stripe)"
+fi
+
+# ── 10. Start Celery worker ────────────────────────────────────────────────────
 WORKERS="${GUNICORN_WORKERS:-3}"
 
 log "Starting Celery worker..."
@@ -124,6 +143,7 @@ $GUNICORN config.wsgi:application \
     --bind "$HOST:$PORT" \
     --workers "$WORKERS" \
     --timeout 120 \
+    --reload \
     --access-logfile "$PROJECT_DIR/logs/access.log" \
     --error-logfile "$PROJECT_DIR/logs/gunicorn_error.log" \
     --log-level info \
@@ -140,6 +160,7 @@ echo -e "${BOLD}${GREEN}   API     → http://localhost:$PORT/api/        ${NC}"
 echo -e "${BOLD}${GREEN}   Jobs    → http://localhost:$PORT/api/jobs/   ${NC}"
 echo -e "${BOLD}${GREEN}   Monitor → http://localhost:$FLOWER_PORT      ${NC}"
 echo -e "${BOLD}${GREEN}   Admin   → http://localhost:$PORT/admin/       ${NC}"
+echo -e "${BOLD}${GREEN}   Stripe  → logs/stripe.log                     ${NC}"
 echo -e "${BOLD}${GREEN}                                                 ${NC}"
 echo -e "${BOLD}${GREEN}   Logs   → logs/                                ${NC}"
 echo -e "${BOLD}${GREEN}   Press Ctrl+C to stop everything         ${NC}"

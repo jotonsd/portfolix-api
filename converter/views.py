@@ -64,6 +64,19 @@ class CVDetailView(APIView):
         serializer = CVUploadResultSerializer(instance)
         return Response(serializer.data)
 
+    def patch(self, request, pk):
+        try:
+            instance = CVUpload.objects.get(pk=pk, user=request.user)
+        except CVUpload.DoesNotExist:
+            return Response({"error": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        html = request.data.get('generated_html')
+        if html:
+            instance.generated_html = html
+            instance.save(update_fields=['generated_html'])
+
+        return Response(CVUploadResultSerializer(instance).data)
+
 
 class CVPreviewView(APIView):
     permission_classes = [AllowAny]
@@ -144,6 +157,45 @@ class PublicPortfolioView(APIView):
 
         html = _strip_code_fences(instance.generated_html)
         return HttpResponse(html, content_type="text/html; charset=utf-8")
+
+
+class RetryCVView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            instance = CVUpload.objects.get(pk=pk, user=request.user)
+        except CVUpload.DoesNotExist:
+            return Response({"error": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if instance.status != 'failed':
+            return Response({"error": "Only failed jobs can be retried."}, status=status.HTTP_400_BAD_REQUEST)
+
+        subscription = getattr(request.user, 'subscription', None)
+        if not subscription:
+            return Response({"error": "No active plan found."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Check limit — retry counts as a new generation attempt
+        can_generate, reason = subscription.can_generate()
+        if not can_generate:
+            return Response({"error": reason}, status=status.HTTP_403_FORBIDDEN)
+
+        # Re-queue — increment now, will be refunded again if it fails
+        instance.status = 'processing'
+        instance.error_message = ''
+        instance.save(update_fields=['status', 'error_message'])
+
+        subscription.increment()
+
+        with instance.cv_file.open('rb') as f:
+            cv_bytes_hex = f.read().hex()
+        filename = instance.cv_file.name.split('/')[-1]
+
+        process_cv_task.delay(instance.pk, cv_bytes_hex, filename)
+
+        logger.info("CV retry queued — id=%s user=%s", instance.pk, request.user.email)
+        result = CVUploadResultSerializer(instance)
+        return Response(result.data, status=status.HTTP_202_ACCEPTED)
 
 
 def _celery_inspect(method: str) -> dict:

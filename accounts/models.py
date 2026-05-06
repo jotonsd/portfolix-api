@@ -107,6 +107,11 @@ class UserSubscription(models.Model):
         UserSubscription.objects.filter(pk=self.pk).update(cv_count=F('cv_count') + 1)
         self.refresh_from_db(fields=['cv_count'])
 
+    def decrement(self):
+        # Refund one generation slot — called when a job fails permanently
+        UserSubscription.objects.filter(pk=self.pk, cv_count__gt=0).update(cv_count=F('cv_count') - 1)
+        self.refresh_from_db(fields=['cv_count'])
+
 
 class Transaction(models.Model):
     PAYMENT = 'payment'
