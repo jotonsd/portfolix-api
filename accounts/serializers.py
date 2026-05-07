@@ -46,15 +46,21 @@ class SocialAuthSerializer(serializers.Serializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    plan = serializers.SerializerMethodField()
-    cv_count = serializers.SerializerMethodField()
-    cv_limit = serializers.SerializerMethodField()
+    plan       = serializers.SerializerMethodField()
+    cv_count   = serializers.SerializerMethodField()
+    cv_limit   = serializers.SerializerMethodField()
+    ats_count  = serializers.SerializerMethodField()
+    ats_limit  = serializers.SerializerMethodField()
+    plan_expires_at = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ['id', 'first_name', 'last_name', 'email', 'avatar',
-                  'contact_number', 'address', 'plan', 'cv_count', 'cv_limit', 'user_type', 'date_joined']
-        read_only_fields = ['id', 'email', 'date_joined', 'plan', 'cv_count', 'cv_limit', 'user_type']
+                  'contact_number', 'address', 'plan', 'cv_count', 'cv_limit',
+                  'ats_count', 'ats_limit', 'plan_expires_at',
+                  'user_type', 'date_joined', 'onboarding_completed', 'profession', 'job_hunting']
+        read_only_fields = ['id', 'email', 'date_joined', 'plan', 'cv_count', 'cv_limit',
+                            'ats_count', 'ats_limit', 'plan_expires_at', 'user_type']
 
     def get_plan(self, obj):
         if obj.user_type in (User.ADMIN, User.STAFF):
@@ -80,6 +86,31 @@ class ProfileSerializer(serializers.ModelSerializer):
             return limit if limit != -1 else 'unlimited'
         except ObjectDoesNotExist:
             return 1
+
+    def get_ats_count(self, obj):
+        if obj.user_type in (User.ADMIN, User.STAFF):
+            return None
+        try:
+            return obj.subscription.ats_count
+        except ObjectDoesNotExist:
+            return 0
+
+    def get_ats_limit(self, obj):
+        if obj.user_type in (User.ADMIN, User.STAFF):
+            return None
+        try:
+            limit = obj.subscription.plan.ats_limit
+            return limit if limit != -1 else 'unlimited'
+        except ObjectDoesNotExist:
+            return 2
+
+    def get_plan_expires_at(self, obj):
+        if obj.user_type in (User.ADMIN, User.STAFF):
+            return None
+        try:
+            return obj.subscription.expires_at
+        except ObjectDoesNotExist:
+            return None
 
 
 class PlanSerializer(serializers.ModelSerializer):

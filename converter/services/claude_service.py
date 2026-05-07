@@ -76,3 +76,8 @@ def _strip_code_fences(text: str) -> str:
     text = re.sub(r'\n?```\s*$', '', text)
     text = re.sub(r'<!--.*?-->', '', text, flags=re.DOTALL)
     return text.strip()
+
+
+def analyze_ats(cv_text: str, job_description: str) -> dict:
+    from .gemini_service import analyze_ats as gemini_ats
+    return gemini_ats(cv_text, job_description)

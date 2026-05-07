@@ -142,6 +142,19 @@ class ProfileView(APIView):
         return Response(serializer.data)
 
 
+class OnboardingView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser, MultiPartParser]
+
+    def post(self, request):
+        user = request.user
+        user.profession = request.data.get('profession', '')
+        user.job_hunting = request.data.get('job_hunting', '')
+        user.onboarding_completed = True
+        user.save(update_fields=['profession', 'job_hunting', 'onboarding_completed'])
+        return Response(ProfileSerializer(user).data)
+
+
 class PlanListView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -176,8 +189,14 @@ from django.utils.decorators import method_decorator
 stripe.api_key = django_settings.STRIPE_SECRET_KEY
 
 PLAN_CONFIG = {
-    'starter': {'name': 'Portfolix Starter', 'amount': 1900, 'currency': 'usd'},
-    'pro':     {'name': 'Portfolix Pro',     'amount': 4900, 'currency': 'usd'},
+    'starter': {
+        'monthly': {'name': 'Portfolix Starter',          'amount':  900, 'interval': 'month'},
+        'yearly':  {'name': 'Portfolix Starter (Yearly)', 'amount': 6000, 'interval': 'year'},
+    },
+    'pro': {
+        'monthly': {'name': 'Portfolix Pro',              'amount': 1900,  'interval': 'month'},
+        'yearly':  {'name': 'Portfolix Pro (Yearly)',     'amount': 12000, 'interval': 'year'},
+    },
 }
 
 
@@ -186,9 +205,14 @@ class CreateCheckoutSessionView(APIView):
 
     def post(self, request):
         plan_name = request.data.get('plan')
-        config = PLAN_CONFIG.get(plan_name)
-        if not config:
+        billing   = request.data.get('billing', 'monthly')
+        if billing not in ('monthly', 'yearly'):
+            billing = 'monthly'
+
+        plan_options = PLAN_CONFIG.get(plan_name)
+        if not plan_options:
             return Response({'error': 'Invalid plan.'}, status=status.HTTP_400_BAD_REQUEST)
+        config = plan_options[billing]
 
         try:
             session = stripe.checkout.Session.create(
@@ -196,9 +220,9 @@ class CreateCheckoutSessionView(APIView):
                 mode='subscription',
                 line_items=[{
                     'price_data': {
-                        'currency': config['currency'],
+                        'currency': 'usd',
                         'unit_amount': config['amount'],
-                        'recurring': {'interval': 'month'},
+                        'recurring': {'interval': config['interval']},
                         'product_data': {'name': config['name']},
                     },
                     'quantity': 1,
@@ -206,7 +230,7 @@ class CreateCheckoutSessionView(APIView):
                 success_url=f"{django_settings.FRONTEND_URL}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
                 cancel_url=f"{django_settings.FRONTEND_URL}/payment/cancel",
                 customer_email=request.user.email,
-                metadata={'user_id': str(request.user.id), 'plan': plan_name},
+                metadata={'user_id': str(request.user.id), 'plan': plan_name, 'billing': billing},
             )
             return Response({'url': session.url})
         except Exception as e:

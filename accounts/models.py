@@ -35,6 +35,9 @@ class User(AbstractUser):
     address = models.TextField(blank=True)
     google_id = models.CharField(max_length=128, blank=True)
     facebook_id = models.CharField(max_length=128, blank=True)
+    profession = models.CharField(max_length=100, blank=True)
+    job_hunting = models.CharField(max_length=20, blank=True)
+    onboarding_completed = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
@@ -53,7 +56,8 @@ class Plan(models.Model):
     name = models.CharField(max_length=50, unique=True)
     display_name = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=8, decimal_places=2, default=0)
-    cv_limit = models.IntegerField(help_text='-1 = unlimited')
+    cv_limit  = models.IntegerField(help_text='-1 = unlimited')
+    ats_limit = models.IntegerField(default=2, help_text='-1 = unlimited')
     is_monthly = models.BooleanField(default=False, help_text='If True, limit resets monthly')
     features = models.JSONField(default=list)
 
@@ -67,7 +71,8 @@ class Plan(models.Model):
 class UserSubscription(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='subscription')
     plan = models.ForeignKey(Plan, on_delete=models.PROTECT)
-    cv_count = models.IntegerField(default=0)
+    cv_count  = models.IntegerField(default=0)
+    ats_count = models.IntegerField(default=0)
     period_start = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField(null=True, blank=True)
     stripe_subscription_id = models.CharField(max_length=255, blank=True, default='')
@@ -81,18 +86,19 @@ class UserSubscription(models.Model):
         if not self.plan.is_monthly:
             return
         now = timezone.now()
-        # Use expires_at if set (exact billing cycle); fall back to calendar month
         if self.expires_at:
             if now >= self.expires_at:
                 self.cv_count = 0
+                self.ats_count = 0
                 self.period_start = now
-                self.expires_at = None  # webhook will set it on next renewal
-                self.save(update_fields=['cv_count', 'period_start', 'expires_at'])
+                self.expires_at = None
+                self.save(update_fields=['cv_count', 'ats_count', 'period_start', 'expires_at'])
         else:
             if now.month != self.period_start.month or now.year != self.period_start.year:
                 self.cv_count = 0
+                self.ats_count = 0
                 self.period_start = now
-                self.save(update_fields=['cv_count', 'period_start'])
+                self.save(update_fields=['cv_count', 'ats_count', 'period_start'])
 
     def can_generate(self):
         if self.plan.cv_limit == -1:
@@ -101,6 +107,18 @@ class UserSubscription(models.Model):
         if self.cv_count >= self.plan.cv_limit:
             return False, f"You have reached your {self.plan.display_name} plan limit of {self.plan.cv_limit} CV generation(s). Please upgrade your plan."
         return True, None
+
+    def can_analyze_ats(self):
+        if self.plan.ats_limit == -1:
+            return True, None
+        self.reset_if_new_month()
+        if self.ats_count >= self.plan.ats_limit:
+            return False, f"You have used all {self.plan.ats_limit} ATS analysis slot(s) on the {self.plan.display_name} plan. Please upgrade to continue."
+        return True, None
+
+    def increment_ats(self):
+        UserSubscription.objects.filter(pk=self.pk).update(ats_count=F('ats_count') + 1)
+        self.refresh_from_db(fields=['ats_count'])
 
     def increment(self):
         # Atomic DB-level increment — prevents race condition under concurrent requests

@@ -1,17 +1,17 @@
 import logging
 
-from celery.app.control import Control
 from django.http import HttpResponse
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
-from config.celery import app as celery_app
-from .models import CVUpload
+from django.conf import settings as django_settings
+from .models import CVUpload, CVBuilderJob
 from .serializers import CVUploadSerializer, CVUploadResultSerializer
 from .services.claude_service import _strip_code_fences
+from .services.extractor import extract_text
 from .tasks import process_cv_task
 
 logger = logging.getLogger('converter')
@@ -26,6 +26,12 @@ class ConvertCVView(APIView):
         if not subscription:
             return Response(
                 {'error': 'No active plan found. Please contact support.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if subscription.plan.name == 'free':
+            return Response(
+                {'error': 'Portfolio Generation is not available on the Free plan. Please upgrade to Starter or Pro.'},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -142,6 +148,22 @@ class CVFileDownloadView(APIView):
         return response
 
 
+_BRANDING_BADGE = (
+    '<div style="position:fixed;bottom:16px;right:16px;z-index:9999;">'
+    '<a href="https://portfolix.co" target="_blank" rel="noreferrer" '
+    'style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#6366f1,#8b5cf6);'
+    'color:#fff;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;font-family:system-ui,sans-serif;'
+    'text-decoration:none;box-shadow:0 4px 14px rgba(99,102,241,0.45);letter-spacing:.02em;">'
+    '&#9889; Made with Portfolix</a></div>'
+)
+
+
+def _inject_branding(html: str) -> str:
+    if '</body>' in html:
+        return html.replace('</body>', f'{_BRANDING_BADGE}</body>', 1)
+    return html + _BRANDING_BADGE
+
+
 class PublicPortfolioView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -156,6 +178,11 @@ class PublicPortfolioView(APIView):
             return HttpResponse("Portfolio not ready yet.", status=404, content_type="text/plain")
 
         html = _strip_code_fences(instance.generated_html)
+        try:
+            if instance.user.subscription.plan.name == 'free':
+                html = _inject_branding(html)
+        except Exception:
+            pass
         return HttpResponse(html, content_type="text/html; charset=utf-8")
 
 
@@ -174,6 +201,12 @@ class RetryCVView(APIView):
         subscription = getattr(request.user, 'subscription', None)
         if not subscription:
             return Response({"error": "No active plan found."}, status=status.HTTP_403_FORBIDDEN)
+
+        if subscription.plan.name == 'free':
+            return Response(
+                {'error': 'Portfolio Generation requires Starter or Pro plan.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         # Check limit — retry counts as a new generation attempt
         can_generate, reason = subscription.can_generate()
@@ -198,62 +231,165 @@ class RetryCVView(APIView):
         return Response(result.data, status=status.HTTP_202_ACCEPTED)
 
 
-def _celery_inspect(method: str) -> dict:
-    try:
-        return getattr(celery_app.control.inspect(timeout=2), method)() or {}
-    except Exception:
-        logger.warning("Celery broker unreachable, skipping inspect.%s", method)
-        return {}
-
-
 class JobStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        active_raw = _celery_inspect('active')
-        active = []
-        for worker, tasks in active_raw.items():
-            for t in tasks:
-                active.append({
-                    "task_id": t["id"],
-                    "name": t["name"],
-                    "worker": worker,
-                    "args": t.get("args"),
-                    "started": t.get("time_start"),
-                    "state": "active",
-                })
-
-        reserved_raw = _celery_inspect('reserved')
-        reserved = []
-        for worker, tasks in reserved_raw.items():
-            for t in tasks:
-                reserved.append({
-                    "task_id": t["id"],
-                    "name": t["name"],
-                    "worker": worker,
-                    "state": "queued",
-                })
-
-        db_summary = {
-            "processing": CVUpload.objects.filter(user=request.user, status='processing').count(),
-            "completed":  CVUpload.objects.filter(user=request.user, status='completed').count(),
-            "failed":     CVUpload.objects.filter(user=request.user, status='failed').count(),
-        }
-
-        page = max(1, int(request.query_params.get('page', 1)))
+        page      = max(1, int(request.query_params.get('page', 1)))
         page_size = max(1, min(50, int(request.query_params.get('page_size', 8))))
-        qs = CVUpload.objects.filter(user=request.user).order_by('-created_at')
-        total = qs.count()
-        offset = (page - 1) * page_size
-        recent = list(
+        qs        = CVUpload.objects.filter(user=request.user).order_by('-created_at')
+        total     = qs.count()
+        offset    = (page - 1) * page_size
+        recent    = list(
             qs.values('id', 'share_token', 'status', 'error_message', 'created_at', 'updated_at')[offset:offset + page_size]
         )
 
         return Response({
-            "workers": {"active_tasks": active, "queued_tasks": reserved},
             "database": {
-                "summary": db_summary,
                 "recent_jobs": recent,
-                "pagination": {"page": page, "page_size": page_size, "total": total, "total_pages": max(1, -(-total // page_size))},
+                "pagination": {
+                    "page": page,
+                    "page_size": page_size,
+                    "total": total,
+                    "total_pages": max(1, -(-total // page_size)),
+                },
             },
         })
+
+
+# ── CV Builder (template-based, client-side generation) ─────────────────────
+
+
+class CVBuilderListView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
+
+    def get(self, request):
+        jobs = CVBuilderJob.objects.filter(user=request.user).values(
+            'id', 'template', 'form_data', 'created_at', 'updated_at'
+        )
+        return Response(list(jobs))
+
+    def post(self, request):
+        template = request.data.get('template', 'classic')
+        form_data = request.data.get('form_data', {})
+        if template not in dict(CVBuilderJob.TEMPLATE_CHOICES):
+            return Response({'error': 'Invalid template.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        TEMPLATE_MIN_PLAN = {
+            'classic': 'free', 'minimal': 'free',
+            'modern': 'starter', 'creative': 'starter', 'developer': 'starter',
+            'custom': 'pro',
+        }
+        PLAN_ORDER = ['free', 'starter', 'pro']
+        subscription = getattr(request.user, 'subscription', None)
+        user_plan = subscription.plan.name if subscription else 'free'
+        required = TEMPLATE_MIN_PLAN.get(template, 'starter')
+        if PLAN_ORDER.index(user_plan) < PLAN_ORDER.index(required):
+            return Response(
+                {'error': f'The {template} template requires the {required.title()} plan or above.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        job = CVBuilderJob.objects.create(user=request.user, template=template, form_data=form_data)
+        return Response({'id': job.pk, 'template': job.template, 'created_at': job.created_at}, status=status.HTTP_201_CREATED)
+
+
+class CVBuilderDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
+
+    def get(self, request, pk):
+        try:
+            job = CVBuilderJob.objects.get(pk=pk, user=request.user)
+        except CVBuilderJob.DoesNotExist:
+            return Response({'error': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'id': job.pk, 'template': job.template, 'form_data': job.form_data, 'updated_at': job.updated_at})
+
+    def patch(self, request, pk):
+        try:
+            job = CVBuilderJob.objects.get(pk=pk, user=request.user)
+        except CVBuilderJob.DoesNotExist:
+            return Response({'error': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if 'template' in request.data:
+            TEMPLATE_MIN_PLAN = {
+                'classic': 'free', 'minimal': 'free',
+                'modern': 'starter', 'creative': 'starter', 'developer': 'starter',
+                'custom': 'pro',
+            }
+            PLAN_ORDER = ['free', 'starter', 'pro']
+            subscription = getattr(request.user, 'subscription', None)
+            user_plan = subscription.plan.name if subscription else 'free'
+            new_template = request.data['template']
+            required = TEMPLATE_MIN_PLAN.get(new_template, 'starter')
+            if PLAN_ORDER.index(user_plan) < PLAN_ORDER.index(required):
+                return Response(
+                    {'error': f'The {new_template} template requires the {required.title()} plan or above.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            job.template = new_template
+
+        if 'form_data' in request.data:
+            job.form_data = request.data['form_data']
+        job.save()
+        return Response({'id': job.pk, 'template': job.template, 'updated_at': job.updated_at})
+
+    def delete(self, request, pk):
+        try:
+            job = CVBuilderJob.objects.get(pk=pk, user=request.user)
+        except CVBuilderJob.DoesNotExist:
+            return Response({'error': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        job.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ── ATS Analyzer ────────────────────────────────────────────────────────────
+
+
+class ATSAnalyzerView(APIView):
+    parser_classes = [MultiPartParser, JSONParser]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        subscription = getattr(request.user, 'subscription', None)
+
+        can_analyze, reason = subscription.can_analyze_ats() if subscription else (False, 'No active plan found.')
+        if not can_analyze:
+            return Response({'error': reason}, status=status.HTTP_403_FORBIDDEN)
+
+        cv_file = request.data.get('cv_file')
+        job_description = request.data.get('job_description', '').strip()
+
+        if not cv_file:
+            return Response({'error': 'cv_file is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not job_description:
+            return Response({'error': 'job_description is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            cv_bytes = cv_file.read()
+            cv_text = extract_text(cv_bytes, cv_file.name)
+            if not cv_text:
+                return Response({'error': 'Could not extract text from the CV file.'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error("ATS extract error: %s", e)
+            return Response({'error': 'Failed to read CV file.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if django_settings.AI_PROVIDER == 'claude':
+            from .services.claude_service import analyze_ats as claude_ats
+            result = claude_ats(cv_text, job_description)
+        else:
+            from .services.gemini_service import analyze_ats
+            result = analyze_ats(cv_text, job_description)
+
+        subscription.increment_ats()
+
+        plan_name = subscription.plan.name
+        if plan_name == 'free':
+            result['suggestions'] = []
+
+        ats_limit = subscription.plan.ats_limit
+        result['ats_count'] = subscription.ats_count
+        result['ats_limit'] = ats_limit if ats_limit != -1 else 'unlimited'
+
+        return Response(result)

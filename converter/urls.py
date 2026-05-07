@@ -1,5 +1,9 @@
 from django.urls import path
-from .views import ConvertCVView, CVDetailView, CVPreviewView, CVDownloadView, CVFileDownloadView, RetryCVView, JobStatusView, PublicPortfolioView
+from .views import (
+    ConvertCVView, CVDetailView, CVPreviewView, CVDownloadView,
+    CVFileDownloadView, RetryCVView, JobStatusView, PublicPortfolioView,
+    CVBuilderListView, CVBuilderDetailView, ATSAnalyzerView,
+)
 
 urlpatterns = [
     path('convert/', ConvertCVView.as_view(), name='convert-cv'),
@@ -10,4 +14,8 @@ urlpatterns = [
     path('convert/<int:pk>/retry/', RetryCVView.as_view(), name='cv-retry'),
     path('jobs/', JobStatusView.as_view(), name='job-status'),
     path('portfolio/<uuid:token>/', PublicPortfolioView.as_view(), name='public-portfolio'),
+
+    path('cv-builder/', CVBuilderListView.as_view(), name='cv-builder-list'),
+    path('cv-builder/<int:pk>/', CVBuilderDetailView.as_view(), name='cv-builder-detail'),
+    path('ats/', ATSAnalyzerView.as_view(), name='ats-analyzer'),
 ]

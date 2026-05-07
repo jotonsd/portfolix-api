@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     RegisterView, LoginView, GoogleLoginView, FacebookLoginView,
     ProfileView, PlanListView, TokenRefreshView,
-    CreateCheckoutSessionView, StripeWebhookView,
+    CreateCheckoutSessionView, StripeWebhookView, OnboardingView,
 )
 from .admin_views import (
     AdminDashboardView, AdminUserListView, AdminUserDetailView,
@@ -18,6 +18,7 @@ urlpatterns = [
     path('facebook/', FacebookLoginView.as_view(), name='facebook-login'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('plans/', PlanListView.as_view(), name='plan-list'),
+    path('onboarding/', OnboardingView.as_view(), name='onboarding'),
 
     path('stripe/checkout/', CreateCheckoutSessionView.as_view(), name='stripe-checkout'),
     path('stripe/webhook/', StripeWebhookView.as_view(), name='stripe-webhook'),

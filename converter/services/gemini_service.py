@@ -36,6 +36,25 @@ USER_PROMPT_TEMPLATE = """CV:
 
 Study this person. Build a world-class portfolio — Tailwind only, rich hero canvas animation, colors and energy matching their field. End your response with </body></html>."""
 
+ATS_SYSTEM = """You are an ATS (Applicant Tracking System) expert. Analyze the CV against the job description.
+
+Return your response as a valid JSON object (no markdown, no code fences) with this exact structure:
+{
+  "score": <integer 0-100>,
+  "verdict": "<one sentence overall assessment>",
+  "matched_keywords": ["keyword1", "keyword2", ...],
+  "missing_keywords": ["keyword1", "keyword2", ...],
+  "suggestions": [
+    {"title": "...", "detail": "..."},
+    ...
+  ],
+  "sections": {
+    "skills_match": <integer 0-100>,
+    "experience_match": <integer 0-100>,
+    "education_match": <integer 0-100>
+  }
+}"""
+
 
 def generate_portfolio_html(cv_text: str) -> str:
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
@@ -58,6 +77,41 @@ def generate_portfolio_html(cv_text: str) -> str:
     html = _dedup_html(html)
     logger.info("Final HTML: %d chars", len(html))
     return html
+
+
+def analyze_ats(cv_text: str, job_description: str) -> dict:
+    import json
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+    user_prompt = f"""CV:
+{_truncate_cv(cv_text, 4000)}
+
+Job Description:
+{job_description[:3000]}
+
+Analyze the CV against this job description and return a JSON response."""
+
+    response = client.models.generate_content(
+        model='gemini-flash-latest',
+        config=types.GenerateContentConfig(
+            system_instruction=ATS_SYSTEM,
+            max_output_tokens=2000,
+        ),
+        contents=user_prompt,
+    )
+
+    if not response.text:
+        raise ValueError("Gemini returned empty response.")
+
+    text = _strip_code_fences(response.text).strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        import re
+        m = re.search(r'\{.*\}', text, re.DOTALL)
+        if m:
+            return json.loads(m.group())
+        raise ValueError("Could not parse ATS analysis response.")
 
 
 def _dedup_html(html: str) -> str:

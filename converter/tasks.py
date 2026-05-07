@@ -47,7 +47,6 @@ def process_cv_task(self, instance_id: int, cv_bytes_hex: str, filename: str):
         attempt = self.request.retries + 1
         logger.error("Task failed — id=%s attempt=%s/%s error=%s", instance_id, attempt, self.max_retries + 1, exc, exc_info=True)
         if self.request.retries >= self.max_retries:
-            # All attempts exhausted — mark failed and refund the generation slot
             try:
                 instance = CVUpload.objects.get(pk=instance_id)
                 instance.status = 'failed'
@@ -60,5 +59,4 @@ def process_cv_task(self, instance_id: int, cv_bytes_hex: str, filename: str):
             except Exception:
                 logger.error("Failed to update CVUpload status for id=%s", instance_id, exc_info=True)
         else:
-            # Still retrying — keep status as 'processing'
             raise self.retry(exc=exc)
