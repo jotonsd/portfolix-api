@@ -10,13 +10,12 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'first_name', 'last_name', 'email', 'password',
-                  'contact_number', 'address', 'avatar']
+                  'contact_number', 'address']
         extra_kwargs = {
             'first_name': {'required': True},
             'last_name': {'required': True},
             'contact_number': {'required': False},
             'address': {'required': False},
-            'avatar': {'required': False},
         }
 
     def create(self, validated_data):
@@ -46,12 +45,13 @@ class SocialAuthSerializer(serializers.Serializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    plan       = serializers.SerializerMethodField()
-    cv_count   = serializers.SerializerMethodField()
-    cv_limit   = serializers.SerializerMethodField()
-    ats_count  = serializers.SerializerMethodField()
-    ats_limit  = serializers.SerializerMethodField()
+    plan            = serializers.SerializerMethodField()
+    cv_count        = serializers.SerializerMethodField()
+    cv_limit        = serializers.SerializerMethodField()
+    ats_count       = serializers.SerializerMethodField()
+    ats_limit       = serializers.SerializerMethodField()
     plan_expires_at = serializers.SerializerMethodField()
+    avatar          = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -61,6 +61,9 @@ class ProfileSerializer(serializers.ModelSerializer):
                   'user_type', 'date_joined', 'onboarding_completed', 'profession', 'job_hunting']
         read_only_fields = ['id', 'email', 'date_joined', 'plan', 'cv_count', 'cv_limit',
                             'ats_count', 'ats_limit', 'plan_expires_at', 'user_type']
+
+    def get_avatar(self, obj):
+        return obj.avatar or None
 
     def get_plan(self, obj):
         if obj.user_type in (User.ADMIN, User.STAFF):

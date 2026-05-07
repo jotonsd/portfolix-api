@@ -17,4 +17,5 @@ def verify_google_token(access_token: str) -> dict:
         'first_name': data.get('given_name', ''),
         'last_name': data.get('family_name', ''),
         'google_id': data.get('sub', ''),
+        'picture': data.get('picture', ''),
     }

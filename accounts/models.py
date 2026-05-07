@@ -30,10 +30,10 @@ class User(AbstractUser):
     username = None
     email = models.EmailField(unique=True)
     user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default=USER)
-    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    avatar = models.CharField(max_length=500, blank=True, default='')
     contact_number = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
-    google_id = models.CharField(max_length=128, blank=True)
+    google_id   = models.CharField(max_length=128, blank=True)
     facebook_id = models.CharField(max_length=128, blank=True)
     profession = models.CharField(max_length=100, blank=True)
     job_hunting = models.CharField(max_length=20, blank=True)

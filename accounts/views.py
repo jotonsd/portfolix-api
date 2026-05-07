@@ -50,6 +50,12 @@ def _handle_social_login(info: dict, id_field: str):
             user.set_unusable_password()
             user.save()
             _assign_free_plan(user)
+
+    picture = info.get('picture', '')
+    if picture and not user.avatar:
+        user.avatar = picture
+        user.save(update_fields=['avatar'])
+
     return user, created
 
 
@@ -135,6 +141,15 @@ class ProfileView(APIView):
         return Response(ProfileSerializer(request.user).data)
 
     def patch(self, request):
+        avatar_file = request.FILES.get('avatar')
+        if avatar_file:
+            from django.core.files.storage import default_storage
+            from django.core.files.base import ContentFile
+            path = default_storage.save(f'avatars/{avatar_file.name}', ContentFile(avatar_file.read()))
+            url = f'{django_settings.BASE_URL.rstrip("/")}{django_settings.MEDIA_URL}{path}'
+            request.user.avatar = url
+            request.user.save(update_fields=['avatar'])
+
         serializer = ProfileSerializer(request.user, data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
