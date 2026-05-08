@@ -92,7 +92,7 @@ class AdminUserListView(APIView):
                 'id': user.id,
                 'full_name': f"{user.first_name} {user.last_name}".strip(),
                 'email': user.email,
-                'avatar': request.build_absolute_uri(user.avatar.url) if user.avatar else None,
+                'avatar': user.avatar or None,
                 'is_active': user.is_active,
                 'date_joined': user.date_joined,
                 'plan': sub.plan.name if sub else 'free',
@@ -126,7 +126,7 @@ class AdminUserDetailView(APIView):
             'id': user.id,
             'full_name': f"{user.first_name} {user.last_name}".strip(),
             'email': user.email,
-            'avatar': request.build_absolute_uri(user.avatar.url) if user.avatar else None,
+            'avatar': user.avatar or None,
             'contact_number': user.contact_number,
             'address': user.address,
             'is_active': user.is_active,
@@ -294,7 +294,7 @@ class AdminStaffView(APIView):
                 'user_type': u.user_type,
                 'is_active': u.is_active,
                 'date_joined': u.date_joined,
-                'avatar': request.build_absolute_uri(u.avatar.url) if u.avatar else None,
+                'avatar': u.avatar or None,
             })
         return Response({'staff': staff, 'total': len(staff)})
 
