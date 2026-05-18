@@ -150,6 +150,7 @@ class Transaction(models.Model):
     stripe_session_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
     stripe_subscription_id = models.CharField(max_length=255, blank=True)
     stripe_invoice_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
+    stripe_payment_intent_id = models.CharField(max_length=255, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -165,3 +166,51 @@ class Transaction(models.Model):
     @property
     def invoice_number(self):
         return f"TRX-{self.created_at.strftime('%Y%m')}-{self.id:04d}"
+
+
+class RefundRequest(models.Model):
+    PENDING   = 'pending'
+    APPROVED  = 'approved'
+    REJECTED  = 'rejected'
+    PROCESSED = 'processed'
+    STATUS_CHOICES = [
+        (PENDING,   'Pending'),
+        (APPROVED,  'Approved'),
+        (REJECTED,  'Rejected'),
+        (PROCESSED, 'Processed'),
+    ]
+
+    user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='refund_requests')
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name='refund_requests')
+    reason      = models.TextField(blank=True)
+    status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default=PENDING)
+
+    # Amounts calculated at request time (all in cents)
+    original_amount  = models.IntegerField()
+    usage_pct        = models.IntegerField(default=0)
+    usage_deduction  = models.IntegerField(default=0)
+    processing_fee   = models.IntegerField(default=0)
+    refund_amount    = models.IntegerField()
+    currency         = models.CharField(max_length=10, default='usd')
+
+    # Where to send the money
+    bank_details = models.JSONField(default=dict, blank=True)
+
+    # Admin fields
+    admin_note   = models.TextField(blank=True)
+    processed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='processed_refunds',
+    )
+    processed_at = models.DateTimeField(null=True, blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"RefundRequest #{self.id} — {self.user} — {self.status}"
+
+    @property
+    def reference(self):
+        return f"RR-{self.created_at.strftime('%Y%m')}-{self.id:04d}"

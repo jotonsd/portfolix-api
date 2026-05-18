@@ -1,5 +1,9 @@
 import logging
+import stripe
+from django.conf import settings as django_settings
 from django.contrib.auth.hashers import make_password
+
+stripe.api_key = getattr(django_settings, 'STRIPE_SECRET_KEY', '')
 from django.db.models import Count, Sum, Q
 from django.utils import timezone
 from datetime import timedelta
@@ -8,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.parsers import JSONParser
 
-from .models import User, Plan, UserSubscription, Transaction
+from .models import User, Plan, UserSubscription, Transaction, RefundRequest
 from converter.models import CVUpload
 
 logger = logging.getLogger('accounts')
@@ -267,15 +271,214 @@ class AdminLedgerView(APIView):
         })
 
 
+def _rr_to_dict(rr):
+    return {
+        'id':               rr.id,
+        'reference':        rr.reference,
+        'transaction_id':   rr.transaction_id,
+        'transaction_invoice': rr.transaction.invoice_number,
+        'original_amount':  rr.original_amount / 100,
+        'usage_pct':        rr.usage_pct,
+        'usage_deduction':  rr.usage_deduction / 100,
+        'processing_fee':   rr.processing_fee / 100,
+        'refund_amount':    rr.refund_amount / 100,
+        'currency':         rr.currency,
+        'reason':           rr.reason,
+        'bank_details':     rr.bank_details,
+        'status':           rr.status,
+        'admin_note':       rr.admin_note,
+        'created_at':       rr.created_at,
+    }
+
+
 class UserBillingView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         txs = Transaction.objects.filter(user=request.user)
+        refund_requests = RefundRequest.objects.filter(user=request.user).select_related('transaction')
         return Response({
             'results': [_tx_to_dict(tx) for tx in txs],
             'total_paid': round((txs.filter(type=Transaction.PAYMENT, status=Transaction.STATUS_PAID).aggregate(s=Sum('amount'))['s'] or 0) / 100, 2),
+            'refund_requests': [_rr_to_dict(rr) for rr in refund_requests],
         })
+
+
+class AdminRefundRequestListView(APIView):
+    permission_classes = [IsAdminOrStaff]
+
+    def get(self, request):
+        status_filter = request.query_params.get('status', '')
+        qs = RefundRequest.objects.select_related('user', 'transaction')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return Response({
+            'results': [{**_rr_to_dict(rr), 'user_email': rr.user.email, 'user_id': rr.user_id} for rr in qs],
+            'total': qs.count(),
+        })
+
+
+class AdminRefundRequestDetailView(APIView):
+    permission_classes = [IsAdminOrStaff]
+    parser_classes = [JSONParser]
+
+    def patch(self, request, pk):
+        try:
+            rr = RefundRequest.objects.select_related('user', 'transaction').get(pk=pk)
+        except RefundRequest.DoesNotExist:
+            return Response({'error': 'Not found.'}, status=404)
+
+        new_status = request.data.get('status')
+        admin_note = (request.data.get('admin_note') or '').strip()
+
+        # Amount override (only allowed on pending/approved, and only before processing)
+        if 'refund_amount' in request.data:
+            if rr.status not in (RefundRequest.PENDING, RefundRequest.APPROVED):
+                return Response({'error': 'Cannot edit amount on a processed or rejected request.'}, status=400)
+            try:
+                new_cents = int(round(float(request.data['refund_amount']) * 100))
+            except (ValueError, TypeError):
+                return Response({'error': 'Invalid refund_amount.'}, status=400)
+            if new_cents < 0 or new_cents > rr.original_amount:
+                return Response({
+                    'error': f'Amount must be between $0.00 and ${rr.original_amount / 100:.2f}.'
+                }, status=400)
+            rr.refund_amount = new_cents
+            rr.save(update_fields=['refund_amount'])
+            return Response(_rr_to_dict(rr))
+
+        allowed = {
+            RefundRequest.PENDING:   [RefundRequest.APPROVED, RefundRequest.REJECTED],
+            RefundRequest.APPROVED:  [RefundRequest.PROCESSED, RefundRequest.REJECTED],
+        }
+        if new_status and new_status not in allowed.get(rr.status, []):
+            return Response({'error': f'Cannot transition from {rr.status} to {new_status}.'}, status=400)
+
+        if admin_note:
+            rr.admin_note = admin_note
+
+        if new_status:
+            rr.status = new_status
+            if new_status in (RefundRequest.APPROVED, RefundRequest.REJECTED, RefundRequest.PROCESSED):
+                from django.utils import timezone as tz
+                rr.processed_by = request.user
+                rr.processed_at = tz.now()
+
+            # When processed → attempt Stripe auto-refund then create ledger entry
+            if new_status == RefundRequest.PROCESSED:
+                stripe_refund_id = ''
+                refund_method = (rr.bank_details or {}).get('method', 'original_card')
+
+                if refund_method == 'original_card':
+                    payment_intent_id = None
+                    sub_id = rr.transaction.stripe_subscription_id
+
+                    # 1. Fastest path: stored directly on the transaction (new transactions)
+                    if rr.transaction.stripe_payment_intent_id:
+                        payment_intent_id = rr.transaction.stripe_payment_intent_id
+                        logger.info("Using stored payment_intent %s for rr=%s", payment_intent_id, rr.id)
+
+                    try:
+                        # 2. Lookup via subscription's initial invoice (older transactions).
+                        # Pin to API 2024-04-10 — Stripe 2025-07-30.basil removed payment_intent
+                        # from invoice responses, but the older version still returns it.
+                        if not payment_intent_id and sub_id:
+                            invoices = stripe.Invoice.list(
+                                subscription=sub_id,
+                                limit=10,
+                                expand=['data.payment_intent'],
+                                stripe_version='2024-04-10',
+                            )
+                            for inv in invoices.data:
+                                if getattr(inv, 'billing_reason', None) == 'subscription_create':
+                                    pi = getattr(inv, 'payment_intent', None)
+                                    if pi:
+                                        payment_intent_id = pi if isinstance(pi, str) else pi.id
+                                        # Cache it so we don't have to look it up again
+                                        rr.transaction.stripe_payment_intent_id = payment_intent_id
+                                        rr.transaction.save(update_fields=['stripe_payment_intent_id'])
+                                    break
+
+                        # 3. Fallback: direct payment_intent on session (one-time payments)
+                        if not payment_intent_id and rr.transaction.stripe_session_id:
+                            session = stripe.checkout.Session.retrieve(
+                                rr.transaction.stripe_session_id,
+                                expand=['payment_intent'],
+                            )
+                            pi = getattr(session, 'payment_intent', None)
+                            if pi:
+                                payment_intent_id = pi if isinstance(pi, str) else pi.id
+
+                        if not payment_intent_id:
+                            logger.error("No payment_intent found for rr=%s sub=%s", rr.id, sub_id)
+                            return Response(
+                                {'error': 'Could not locate the original Stripe payment intent. Process this refund manually.'},
+                                status=400,
+                            )
+
+                        stripe_refund = stripe.Refund.create(
+                            payment_intent=payment_intent_id,
+                            amount=rr.refund_amount,
+                            reason='requested_by_customer',
+                            metadata={
+                                'refund_request_id': str(rr.id),
+                                'user_id': str(rr.user_id),
+                            },
+                        )
+                        stripe_refund_id = stripe_refund.id  # attribute access, not .get()
+                        logger.info(
+                            "Stripe refund created: %s rr=%s pi=%s amount=$%.2f",
+                            stripe_refund_id, rr.id, payment_intent_id, rr.refund_amount / 100,
+                        )
+
+                    except stripe.error.StripeError as e:
+                        logger.error("Stripe refund failed for rr=%s: %s", rr.id, e)
+                        return Response({'error': f'Stripe error: {str(e)}'}, status=400)
+                    except Exception as e:
+                        logger.error("Unexpected refund error for rr=%s: %s", rr.id, e, exc_info=True)
+                        return Response({'error': f'Unexpected error: {str(e)}'}, status=500)
+
+                desc = f"Refund processed for {rr.transaction.invoice_number} (ref: {rr.reference})"
+                if stripe_refund_id:
+                    desc += f" · Stripe: {stripe_refund_id}"
+                elif refund_method != 'original_card':
+                    desc += f" · via {refund_method.replace('_', ' ')}"
+
+                Transaction.objects.create(
+                    user=rr.user,
+                    amount=rr.refund_amount,
+                    currency=rr.currency,
+                    plan=rr.transaction.plan,
+                    type=Transaction.REFUND,
+                    status=Transaction.STATUS_PAID,
+                    description=desc,
+                )
+                logger.info("Refund processed: rr=%s user=%s amount=$%.2f method=%s", rr.id, rr.user.email, rr.refund_amount / 100, refund_method)
+
+                # Cancel the Stripe subscription and downgrade user to free plan
+                sub_id = rr.transaction.stripe_subscription_id
+                if sub_id:
+                    try:
+                        stripe.Subscription.cancel(sub_id)
+                        logger.info("Stripe subscription %s cancelled for rr=%s", sub_id, rr.id)
+                    except stripe.error.StripeError as e:
+                        logger.warning("Could not cancel Stripe sub %s (may already be cancelled): %s", sub_id, e)
+
+                try:
+                    free_plan = Plan.objects.get(name=Plan.FREE)
+                    user_sub = UserSubscription.objects.get(user=rr.user)
+                    user_sub.plan = free_plan
+                    user_sub.stripe_subscription_id = ''
+                    user_sub.cv_count = 0
+                    user_sub.period_start = timezone.now()
+                    user_sub.expires_at = None
+                    user_sub.save(update_fields=['plan', 'stripe_subscription_id', 'cv_count', 'period_start', 'expires_at'])
+                    logger.info("Downgraded user %s to free after refund rr=%s", rr.user.email, rr.id)
+                except (Plan.DoesNotExist, UserSubscription.DoesNotExist) as e:
+                    logger.warning("Could not downgrade user %s after refund: %s", rr.user.email, e)
+
+        rr.save()
+        return Response(_rr_to_dict(rr))
 
 
 class AdminStaffView(APIView):
