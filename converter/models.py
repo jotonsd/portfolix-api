@@ -6,7 +6,7 @@ from django.db import models
 class CVBuilderJob(models.Model):
     TEMPLATE_CHOICES = [
         ('classic', 'Classic'),
-        ('minimal', 'Minimal'),
+        ('professional', 'Professional'),
         ('modern', 'Modern'),
         ('creative', 'Creative'),
         ('developer', 'Developer'),

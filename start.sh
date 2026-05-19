@@ -144,8 +144,9 @@ $GUNICORN config.wsgi:application \
     --workers "$WORKERS" \
     --timeout 120 \
     --reload \
+    --capture-output \
     --access-logfile "$PROJECT_DIR/logs/access.log" \
-    --error-logfile "$PROJECT_DIR/logs/gunicorn_error.log" \
+    --error-logfile "-" \
     --log-level info \
     &
 GUNICORN_PID=$!

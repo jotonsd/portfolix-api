@@ -3,6 +3,7 @@ from .views import (
     ConvertCVView, CVDetailView, CVPreviewView, CVDownloadView,
     CVFileDownloadView, RetryCVView, JobStatusView, PublicPortfolioView,
     CVBuilderListView, CVBuilderDetailView, ATSAnalyzerView,
+    CVBuilderPDFView, CVRephraseView, CVTipsView,
 )
 
 urlpatterns = [
@@ -18,4 +19,7 @@ urlpatterns = [
     path('cv-builder/', CVBuilderListView.as_view(), name='cv-builder-list'),
     path('cv-builder/<int:pk>/', CVBuilderDetailView.as_view(), name='cv-builder-detail'),
     path('ats/', ATSAnalyzerView.as_view(), name='ats-analyzer'),
+    path('cv-builder/pdf/', CVBuilderPDFView.as_view(), name='cv-builder-pdf'),
+    path('cv-builder/rephrase/', CVRephraseView.as_view(), name='cv-builder-rephrase'),
+    path('cv-builder/tips/', CVTipsView.as_view(), name='cv-builder-tips'),
 ]

@@ -277,7 +277,7 @@ class CVBuilderListView(APIView):
             return Response({'error': 'Invalid template.'}, status=status.HTTP_400_BAD_REQUEST)
 
         TEMPLATE_MIN_PLAN = {
-            'classic': 'free', 'minimal': 'free',
+            'classic': 'free', 'professional': 'free',
             'modern': 'starter', 'creative': 'starter', 'developer': 'starter',
             'custom': 'pro',
         }
@@ -323,7 +323,7 @@ class CVBuilderDetailView(APIView):
 
         if 'template' in request.data:
             TEMPLATE_MIN_PLAN = {
-                'classic': 'free', 'minimal': 'free',
+                'classic': 'free', 'professional': 'free',
                 'modern': 'starter', 'creative': 'starter', 'developer': 'starter',
                 'custom': 'pro',
             }
@@ -402,3 +402,99 @@ class ATSAnalyzerView(APIView):
         result['ats_limit'] = ats_limit if ats_limit != -1 else 'unlimited'
 
         return Response(result)
+
+
+class CVBuilderPDFView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
+
+    def post(self, request):
+        html = request.data.get('html', '').strip()
+        if not html:
+            return Response({'error': 'html is required.'}, status=400)
+        try:
+            from weasyprint import HTML
+            pdf_bytes = HTML(string=html, base_url=None).write_pdf()
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            name = request.data.get('name', 'cv') or 'cv'
+            response['Content-Disposition'] = f'attachment; filename="{name}.pdf"'
+            return response
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+
+class CVRephraseView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
+
+    def post(self, request):
+        subscription = getattr(request.user, 'subscription', None)
+        user_plan = subscription.plan.name if subscription else 'free'
+        if user_plan == 'free' and request.user.user_type not in ('admin', 'staff'):
+            return Response({'error': 'AI Writing Tools require a Starter or Pro plan.'}, status=403)
+
+        text = request.data.get('text', '').strip()
+        section_type = request.data.get('section_type', 'general')
+        if not text:
+            return Response({'error': 'text is required.'}, status=400)
+
+        PROMPTS = {
+            'summary':        'Rephrase this professional summary to be more impactful and concise (3-4 sentences). Use strong, confident language. Return only the rephrased text:',
+            'experience':     'Rephrase this job description using strong action verbs and achievement-focused language. Quantify results where possible. Return only the rephrased text:',
+            'education':      'Rephrase this education description to highlight achievements and relevance. Return only the rephrased text:',
+            'skills':         'Rephrase or expand this skills description professionally. Return only the rephrased text:',
+            'projects':       'Rephrase this project description to highlight impact and technical depth. Return only the rephrased text:',
+            'certifications': 'Rephrase this certification description to sound more professional. Return only the rephrased text:',
+        }
+        prompt = PROMPTS.get(section_type, 'Rephrase this CV content to be more professional and impactful. Return only the rephrased text:')
+
+        try:
+            from google import genai
+            client = genai.Client(api_key=django_settings.GEMINI_API_KEY)
+            response = client.models.generate_content(
+                model='gemini-flash-latest',
+                contents=f"{prompt}\n\n{text}",
+            )
+            return Response({'rephrased': response.text.strip()})
+        except Exception:
+            logger.exception("CVRephraseView error")
+            msg = 'AI service is temporarily overloaded. Please try again in a moment.'
+            return Response({'error': msg}, status=503)
+
+
+class CVTipsView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
+
+    def post(self, request):
+        subscription = getattr(request.user, 'subscription', None)
+        user_plan = subscription.plan.name if subscription else 'free'
+        if user_plan == 'free' and request.user.user_type not in ('admin', 'staff'):
+            return Response({'error': 'AI Writing Tools require a Starter or Pro plan.'}, status=403)
+
+        section_type = request.data.get('section_type', 'general')
+
+        TIPS_PROMPTS = {
+            'summary':        'Give exactly 4 concise bullet-point tips for writing a strong professional summary on a CV. Cover: what to include, tone, length, and a common mistake to avoid. Format each tip starting with • and keep each under 15 words.',
+            'experience':     'Give exactly 4 concise bullet-point tips for writing strong work experience entries on a CV. Cover: action verbs, quantifying results, relevance, and format. Format each tip starting with • and keep each under 15 words.',
+            'education':      'Give exactly 4 concise bullet-point tips for writing education entries on a CV. Cover: what details to include, GPA, relevance, and formatting. Format each tip starting with • and keep each under 15 words.',
+            'skills':         'Give exactly 4 concise bullet-point tips for listing skills on a CV. Cover: relevance, grouping, skill levels, and what to avoid. Format each tip starting with • and keep each under 15 words.',
+            'projects':       'Give exactly 4 concise bullet-point tips for writing project entries on a CV. Cover: what to highlight, tech stack, impact, and links. Format each tip starting with • and keep each under 15 words.',
+            'languages':      'Give exactly 4 concise bullet-point tips for listing languages on a CV. Cover: proficiency levels, when to include, ordering, and certification. Format each tip starting with • and keep each under 15 words.',
+            'certifications': 'Give exactly 4 concise bullet-point tips for listing certifications on a CV. Cover: relevance, expiry dates, ordering, and naming. Format each tip starting with • and keep each under 15 words.',
+        }
+        prompt = TIPS_PROMPTS.get(section_type, 'Give exactly 4 concise bullet-point tips for writing this CV section professionally. Format each tip starting with • and keep each under 15 words.')
+
+        try:
+            from google import genai
+            client = genai.Client(api_key=django_settings.GEMINI_API_KEY)
+            response = client.models.generate_content(
+                model='gemini-flash-latest',
+                contents=prompt,
+            )
+            tips = [line.strip() for line in response.text.strip().splitlines() if line.strip().startswith('•')]
+            return Response({'tips': tips})
+        except Exception:
+            logger.exception("CVTipsView error")
+            msg = 'AI service is temporarily overloaded. Please try again in a moment.'
+            return Response({'error': msg}, status=503)
