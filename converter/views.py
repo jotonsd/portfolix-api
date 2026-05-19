@@ -408,10 +408,29 @@ class CVBuilderPDFView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
 
+    # CSS injected before WeasyPrint rendering to strip browser-preview chrome
+    PRINT_CSS = """
+<style>
+@page { margin: 0; size: A4 portrait; }
+html { background: white !important; }
+body {
+  margin: 0 !important;
+  max-width: none !important;
+  width: 210mm !important;
+  min-height: 0 !important;
+}
+</style>
+"""
+
     def post(self, request):
         html = request.data.get('html', '').strip()
         if not html:
             return Response({'error': 'html is required.'}, status=400)
+        # Inject print styles right before </head> (or prepend if no head tag)
+        if '</head>' in html:
+            html = html.replace('</head>', self.PRINT_CSS + '</head>', 1)
+        else:
+            html = self.PRINT_CSS + html
         try:
             from weasyprint import HTML
             pdf_bytes = HTML(string=html, base_url=None).write_pdf()
@@ -419,8 +438,9 @@ class CVBuilderPDFView(APIView):
             name = request.data.get('name', 'cv') or 'cv'
             response['Content-Disposition'] = f'attachment; filename="{name}.pdf"'
             return response
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+        except Exception:
+            logger.exception("CVBuilderPDFView error")
+            return Response({'error': 'PDF generation failed.'}, status=500)
 
 
 class CVRephraseView(APIView):
