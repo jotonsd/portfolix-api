@@ -284,6 +284,15 @@ class CVBuilderListView(APIView):
         PLAN_ORDER = ['free', 'starter', 'pro']
         subscription = getattr(request.user, 'subscription', None)
         user_plan = subscription.plan.name if subscription else 'free'
+
+        if user_plan == 'free':
+            existing_count = CVBuilderJob.objects.filter(user=request.user).count()
+            if existing_count >= 1:
+                return Response(
+                    {'error': 'Free plan users can only create 1 CV. Upgrade to Starter or Pro to create more.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
         required = TEMPLATE_MIN_PLAN.get(template, 'starter')
         if PLAN_ORDER.index(user_plan) < PLAN_ORDER.index(required):
             return Response(
