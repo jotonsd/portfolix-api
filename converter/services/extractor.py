@@ -16,6 +16,7 @@ SUPPORTED_EXTENSIONS = {
     'jpeg': 'image/jpeg',
     'png':  'image/png',
     'webp': 'image/webp',
+    'txt':  'text/plain',
 }
 
 IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
@@ -37,7 +38,9 @@ def extract_text(file_bytes: bytes, filename: str) -> str:
             f"Supported: {', '.join(SUPPORTED_EXTENSIONS.keys())}"
         )
 
-    if ext == 'pdf':
+    if ext == 'txt':
+        return file_bytes.decode('utf-8', errors='replace').strip()
+    elif ext == 'pdf':
         return _extract_from_pdf(file_bytes)
     elif ext in IMAGE_EXTENSIONS:
         return _extract_from_image(file_bytes, ext)

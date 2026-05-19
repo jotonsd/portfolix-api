@@ -260,6 +260,44 @@ class JobStatusView(APIView):
 # ── CV Builder (template-based, client-side generation) ─────────────────────
 
 
+class ConvertFromBuilderView(APIView):
+    """Generate a portfolio directly from CV builder form data (no file upload)."""
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
+
+    def post(self, request):
+        subscription = getattr(request.user, 'subscription', None)
+        if not subscription:
+            return Response({'error': 'No active plan found.'}, status=status.HTTP_403_FORBIDDEN)
+        if subscription.plan.name == 'free':
+            return Response(
+                {'error': 'Portfolio Generation is not available on the Free plan. Please upgrade to Starter or Pro.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        can_generate, reason = subscription.can_generate()
+        if not can_generate:
+            return Response({'error': reason}, status=status.HTTP_403_FORBIDDEN)
+
+        cv_text = request.data.get('cv_text', '').strip()
+        if not cv_text:
+            return Response({'error': 'cv_text is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from django.core.files.base import ContentFile
+        content_file = ContentFile(cv_text.encode('utf-8'), name='cv-from-builder.txt')
+        instance = CVUpload(status='processing', user=request.user)
+        instance.cv_file.save('cv-from-builder.txt', content_file, save=False)
+        instance.save()
+
+        subscription.increment()
+
+        cv_bytes_hex = cv_text.encode('utf-8').hex()
+        from .tasks import process_cv_task
+        process_cv_task.delay(instance.pk, cv_bytes_hex, 'cv-from-builder.txt')
+
+        result = CVUploadResultSerializer(instance)
+        return Response(result.data, status=status.HTTP_202_ACCEPTED)
+
+
 class CVBuilderListView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
@@ -408,17 +446,13 @@ class CVBuilderPDFView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
 
-    # CSS injected before WeasyPrint rendering to strip browser-preview chrome
+    # Minimal CSS — only removes WeasyPrint default page margins and viewport-height
     PRINT_CSS = """
 <style>
 @page { margin: 0; size: A4 portrait; }
-html { background: white !important; }
-body {
-  margin: 0 !important;
-  max-width: none !important;
-  width: 210mm !important;
-  min-height: 0 !important;
-}
+html { background: white !important; height: auto !important; }
+body { min-height: 0 !important; height: auto !important; }
+.container { min-height: 0 !important; }
 </style>
 """
 
@@ -433,7 +467,8 @@ body {
             html = self.PRINT_CSS + html
         try:
             from weasyprint import HTML
-            pdf_bytes = HTML(string=html, base_url=None).write_pdf()
+            base_url = request.build_absolute_uri('/')
+            pdf_bytes = HTML(string=html, base_url=base_url).write_pdf()
             response = HttpResponse(pdf_bytes, content_type='application/pdf')
             name = request.data.get('name', 'cv') or 'cv'
             response['Content-Disposition'] = f'attachment; filename="{name}.pdf"'

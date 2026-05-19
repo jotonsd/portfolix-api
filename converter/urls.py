@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    ConvertCVView, CVDetailView, CVPreviewView, CVDownloadView,
+    ConvertCVView, ConvertFromBuilderView, CVDetailView, CVPreviewView, CVDownloadView,
     CVFileDownloadView, RetryCVView, JobStatusView, PublicPortfolioView,
     CVBuilderListView, CVBuilderDetailView, ATSAnalyzerView,
     CVBuilderPDFView, CVRephraseView, CVTipsView,
@@ -8,6 +8,7 @@ from .views import (
 
 urlpatterns = [
     path('convert/', ConvertCVView.as_view(), name='convert-cv'),
+    path('convert/from-builder/', ConvertFromBuilderView.as_view(), name='convert-from-builder'),
     path('convert/<int:pk>/', CVDetailView.as_view(), name='cv-detail'),
     path('convert/<int:pk>/preview/', CVPreviewView.as_view(), name='cv-preview'),
     path('convert/<int:pk>/download/', CVDownloadView.as_view(), name='cv-download'),
