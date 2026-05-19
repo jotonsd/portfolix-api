@@ -52,8 +52,17 @@ Return your response as a valid JSON object (no markdown, no code fences) with t
     "skills_match": <integer 0-100>,
     "experience_match": <integer 0-100>,
     "education_match": <integer 0-100>
-  }
-}"""
+  },
+  "suggested_sentences": [
+    {
+      "original": "<exact sentence copied from the CV>",
+      "improved": "<rewritten version of that sentence using keywords and phrasing from the job description>"
+    },
+    ...
+  ]
+}
+
+For suggested_sentences: pick 3-5 sentences directly from the CV that are relevant but could be rephrased to better match the job description. Copy the original sentence exactly as it appears in the CV, then write an improved version that incorporates missing keywords or better aligns with the job description language."""
 
 
 def generate_portfolio_html(cv_text: str) -> str:
