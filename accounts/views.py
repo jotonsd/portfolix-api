@@ -490,6 +490,25 @@ class StripeWebhookView(APIView):
         return Response({'status': 'ok'})
 
 
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
+
+    def post(self, request):
+        current = request.data.get('current_password', '').strip()
+        new     = request.data.get('new_password', '').strip()
+        if not current or not new:
+            return Response({'error': 'current_password and new_password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if len(new) < 8:
+            return Response({'error': 'New password must be at least 8 characters.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not request.user.check_password(current):
+            return Response({'error': 'Current password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
+        request.user.set_password(new)
+        request.user.save(update_fields=['password'])
+        logger.info("Password changed for user %s", request.user.email)
+        return Response({'message': 'Password changed successfully.'})
+
+
 class RefundEstimateView(APIView):
     permission_classes = [IsAuthenticated]
 

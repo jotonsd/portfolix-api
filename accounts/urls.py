@@ -3,7 +3,7 @@ from .views import (
     RegisterView, LoginView, GoogleLoginView, FacebookLoginView,
     ProfileView, PlanListView, TokenRefreshView,
     CreateCheckoutSessionView, StripeWebhookView, OnboardingView,
-    RefundEstimateView, RefundRequestView,
+    RefundEstimateView, RefundRequestView, ChangePasswordView,
 )
 from .admin_views import (
     AdminDashboardView, AdminUserListView, AdminUserDetailView,
@@ -24,6 +24,7 @@ urlpatterns = [
 
     path('stripe/checkout/', CreateCheckoutSessionView.as_view(), name='stripe-checkout'),
     path('stripe/webhook/', StripeWebhookView.as_view(), name='stripe-webhook'),
+    path('password/change/', ChangePasswordView.as_view(), name='password-change'),
     path('refund/estimate/', RefundEstimateView.as_view(), name='refund-estimate'),
     path('refund/request/', RefundRequestView.as_view(), name='refund-request'),
 
