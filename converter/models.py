@@ -7,6 +7,9 @@ class CVBuilderJob(models.Model):
     TEMPLATE_CHOICES = [
         ('classic', 'Classic'),
         ('professional', 'Professional'),
+        ('lebenslauf', 'Lebenslauf'),
+        ('german2', 'German Modern'),
+        ('magnific', 'Magnific'),
         ('modern', 'Modern'),
         ('creative', 'Creative'),
         ('developer', 'Developer'),

@@ -316,6 +316,7 @@ class CVBuilderListView(APIView):
 
         TEMPLATE_MIN_PLAN = {
             'classic': 'free', 'professional': 'free',
+            'lebenslauf': 'starter', 'german2': 'starter', 'magnific': 'starter',
             'modern': 'starter', 'creative': 'starter', 'developer': 'starter',
             'custom': 'pro',
         }
@@ -362,6 +363,7 @@ class CVBuilderDetailView(APIView):
         if 'template' in request.data:
             TEMPLATE_MIN_PLAN = {
                 'classic': 'free', 'professional': 'free',
+                'lebenslauf': 'starter',
                 'modern': 'starter', 'creative': 'starter', 'developer': 'starter',
                 'custom': 'pro',
             }
