@@ -13,6 +13,7 @@ class CVBuilderJob(models.Model):
         ('modern', 'Modern'),
         ('creative', 'Creative'),
         ('developer', 'Developer'),
+        ('zephyr', 'Zephyr'),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='cv_builder_jobs')
