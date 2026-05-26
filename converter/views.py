@@ -12,9 +12,40 @@ from .models import CVUpload, CVBuilderJob
 from .serializers import CVUploadSerializer, CVUploadResultSerializer
 from .services.claude_service import _strip_code_fences
 from .services.extractor import extract_text
+from .services.cv_form_parser import parse_cv_to_form_data
 from .tasks import process_cv_task
 
 logger = logging.getLogger('converter')
+
+
+class CVBuilderImportView(APIView):
+    """Upload a PDF/DOC CV and get back parsed CVFormData JSON."""
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'error': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            file_bytes = file.read()
+            cv_text = extract_text(file_bytes, file.name)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            logger.exception("CVBuilderImportView extract error")
+            return Response({'error': 'Could not read the file.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not cv_text.strip():
+            return Response({'error': 'No text could be extracted from the file.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            form_data = parse_cv_to_form_data(cv_text)
+            return Response({'form_data': form_data})
+        except Exception:
+            logger.exception("CVBuilderImportView parse error")
+            return Response({'error': 'Could not parse the CV. Please try again.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ConvertCVView(APIView):
